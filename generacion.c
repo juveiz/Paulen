@@ -1,5 +1,35 @@
 #include "generacion.h"
 
+void escribir_subseccion_data(FILE* fpasm){
+  fprintf(fpasm, "segment .data\n");
+}
+
+void escribir_cabecera_bss(FILE* fpasm){
+  fprintf(fpasm, "segment .bss\n");
+  fprintf(fpasm, "\t__esp resd 1\n");
+}
+
+void escribir_inicio_main(FILE* fpasm){
+  fprintf(fpasm, "\t; -----------------------\n");
+  fprintf(fpasm, "\t; PROCEDIMIENTO PRINCIPAL\n");
+  fprintf(fpasm, "\t; -----------------------\n");
+  fprintf(fpasm, "main:\n");
+  fprintf(fpasm, "\tmov dword [__esp], esp\n\n");
+}
+
+void escribir_fin(FILE* fpasm){
+  fprintf(fpasm, "\tmov dword esp, [__esp]\n");
+  fprintf(fpasm, "\tret\n");
+}
+
+void escribir_segmento_codigo(FILE* fpasm){
+  fprintf(fpasm, "segment .text\n");
+  fprintf(fpasm, "\tglobal main\n");
+  fprintf(fpasm, "\textern scan_int, print_int, scan_float, print_float, scan_boolean, print_boolean\n");
+  fprintf(fpasm, "\textern print_endofline, print_blank, print_string\n");
+  fprintf(fpasm, "\textern alfa_malloc, alfa_free, ld_float\n");
+}
+
 void escribir_operando(FILE* fpasm, char* nombre, int es_variable){
   /*Comprobamos si es variable*/
   /*Si es variable, la escribimos como tal*/
