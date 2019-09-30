@@ -29,6 +29,12 @@ void escribir_segmento_codigo(FILE* fpasm){
   fprintf(fpasm, "\textern print_endofline, print_blank, print_string\n");
   fprintf(fpasm, "\textern alfa_malloc, alfa_free, ld_float\n");
 }
+
+void declarar_variable(FILE* fpasm, char * nombre, int tipo, int tamano){
+  fprintf(fpasm, "_%s resd %d\n",nombre,tamano);
+}
+
+
 void lectura_operandos(FILE* fpasm, int es_variable_1, int es_variable_2){
   /* Sacamos el primer operando*/
   fprintf(fpasm, "pop dword eax\n");
@@ -108,7 +114,7 @@ void y(FILE* fpasm, int es_variable_1, int es_variable_2){
 }
 void cambiar_signo(FILE* fpasm, int es_variable){
   /* Obtenemos los operandos en eax */
-  lectura_operandos(fpasm,es_variable);
+  lectura_operando(fpasm,es_variable);
   /* Dividimos */
   fprintf(fpasm, "neg eax\n");
   /* Guardamos el valor en la pila*/
@@ -117,7 +123,7 @@ void cambiar_signo(FILE* fpasm, int es_variable){
 
 void no(FILE* fpasm, int es_variable, int cuantos_no){
   /* Obtenemos los operandos en eax */
-  lectura_operandos(fpasm,es_variable);
+  lectura_operando(fpasm,es_variable);
   /* Ponemos 0 en ebx */
   fprintf(fpasm, "mov ebx 0\n");
   /* Vemos si es 0 */
@@ -132,7 +138,29 @@ void no(FILE* fpasm, int es_variable, int cuantos_no){
   fprintf(fpasm, "cero_no_%d:\n",cuantos_no);
   fprintf(fpasm, "mov eax 1\n");
 
-  fprintf(fpasm, "fin_no_%d:\n"cuantos_no);
+  fprintf(fpasm, "fin_no_%d:\n",cuantos_no);
   /* Ponemos el nuevo valor */
   fprintf(fpasm, "push dword eax\n");
+}
+
+void suma_iterativa(FILE *fpasm, char *nombre1, char *nombre2) {
+  leer(fpasm, nombre1, 1);
+  leer(fpasm, nombre2, 1);
+
+  fprintf(fpasm, "mov dword eax,[_x]");
+  fprintf(fpasm, "mov dword ebx,[_y]");
+  fprintf(fpasm, "while:");
+  fprintf(fpasm, "cmp ebx,0");
+  fprintf(fpasm, "jz fin");
+  fprintf(fpasm, "add eax,ebx");
+  fprintf(fpasm, "mov dword [_x], eax");
+  fprintf(fpasm, "push dword eax");
+
+  escribir(fpasm,0,ENTERO);
+  leer(fpasm, nombre2, 1);
+
+  fprintf(fpasm, "mov dword ebx,[_y]");
+  fprintf(fpasm, "jmp while");
+  fprintf(fpasm, "fin:");
+
 }
