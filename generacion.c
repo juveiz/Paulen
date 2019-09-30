@@ -1,5 +1,28 @@
 #include "generacion.h"
 
+void escribir_operando(FILE* fpasm, char* nombre, int es_variable){
+  /*Comprobamos si es variable*/
+  /*Si es variable, la escribimos como tal*/
+  if (es_variable == 1){
+    fprintf(fpasm, "push dword _%s\n",nombre);
+  }
+  else{
+    fprintf(fpasm, "push dword %s\n", nombre);
+  }
+}
+
+void asignar(FILE* fpasm, char* nombre, int es_variable){
+  /*Sacamos el valor de la pila*/
+  fprintf(fpasm, "pop dword eax\n");
+    /*Si es una referencia, sacamos el valor*/
+  if (es_variable == 1){
+    fprintf(fpasm, "mov %s, [eax]\n", nombre);
+  }
+  else{
+    fprintf(fpasm, "mov %s, eax\n", nombre);
+  }
+}
+
 void lectura_operandos(FILE* fpasm, int es_variable_1, int es_variable_2){
   /* Sacamos el primer operando*/
   fprintf(fpasm, "pop dword eax\n");
@@ -79,7 +102,7 @@ void y(FILE* fpasm, int es_variable_1, int es_variable_2){
 }
 void cambiar_signo(FILE* fpasm, int es_variable){
   /* Obtenemos los operandos en eax */
-  lectura_operandos(fpasm,es_variable);
+  lectura_operando(fpasm,es_variable);
   /* Dividimos */
   fprintf(fpasm, "neg eax\n");
   /* Guardamos el valor en la pila*/
@@ -88,7 +111,7 @@ void cambiar_signo(FILE* fpasm, int es_variable){
 
 void no(FILE* fpasm, int es_variable, int cuantos_no){
   /* Obtenemos los operandos en eax */
-  lectura_operandos(fpasm,es_variable);
+  lectura_operando(fpasm,es_variable);
   /* Ponemos 0 en ebx */
   fprintf(fpasm, "mov ebx 0\n");
   /* Vemos si es 0 */
@@ -106,4 +129,135 @@ void no(FILE* fpasm, int es_variable, int cuantos_no){
   fprintf(fpasm, "fin_no_%d:\n"cuantos_no);
   /* Ponemos el nuevo valor */
   fprintf(fpasm, "push dword eax\n");
+}
+
+void igual(FILE* fpasm, int es_variable1, int es_variable2, int etiqueta){
+  /* Obtenemos los operandos en eax y en ebx*/
+  lectura_operandos(fpasm,es_variable_1,es_variable_2);
+  /*Comparamos eax y ebx*/
+  fprintf(fpasm, "\tcmp eax,ebx\n");
+  printf(fpasm, "\tje igual_%d\n",etiqueta);
+  /*Si no se cumple la comparacion, ponemos 0 en la pila*/
+  fprintf(fpasm, "\tpush dword 0\n");
+  /*Saltamos a la etiqueta fin*/
+  fprintf(fpasm, "\tjmp fin_igual_%d\n",etiqueta);
+  /*Si se cumple la comparacion, ponemos 1 en la pila*/
+  fprintf(fpasm, "igual_%d:\n",etiqueta);
+  fprintf(fpasm, "\tpush dword 1\n");
+
+  fprintf(fpasm, "fin_igual_%d:\n",etiqueta);
+}
+
+void distinto(FILE* fpasm, int es_variable1, int es_variable2, int etiqueta){
+  /* Obtenemos los operandos en eax y en ebx*/
+  lectura_operandos(fpasm,es_variable_1,es_variable_2);
+  /*Comparamos eax y ebx*/
+  fprintf(fpasm, "\tcmp eax,ebx\n");
+  printf(fpasm, "\tjne distinto_%d\n",etiqueta);
+  /*Si no se cumple la comparacion, ponemos 0 en la pila*/
+  fprintf(fpasm, "\tpush dword 0\n");
+  /*Saltamos a la etiqueta fin*/
+  fprintf(fpasm, "\tjmp fin_distinto_%d\n",etiqueta);
+  /*Si se cumple la comparacion, ponemos 1 en la pila*/
+  fprintf(fpasm, "dstinto_%d:\n",etiqueta);
+  fprintf(fpasm, "\tpush dword 1\n");
+
+  fprintf(fpasm, "fin_distinto_%d:\n",etiqueta);
+}
+
+void menor_igual(FILE* fpasm, int es_variable1, int es_variable2, int etiqueta){
+  /* Obtenemos los operandos en eax y en ebx*/
+  lectura_operandos(fpasm,es_variable_1,es_variable_2);
+  /*Comparamos eax y ebx*/
+  fprintf(fpasm, "\tcmp eax,ebx\n");
+  printf(fpasm, "\tjle menor_igual_%d\n",etiqueta);
+  /*Si no se cumple la comparacion, ponemos 0 en la pila*/
+  fprintf(fpasm, "\tpush dword 0\n");
+  /*Saltamos a la etiqueta fin*/
+  fprintf(fpasm, "\tjmp fin_menor_igual_%d\n",etiqueta);
+  /*Si se cumple la comparacion, ponemos 1 en la pila*/
+  fprintf(fpasm, "menor_igual_%d:\n",etiqueta);
+  fprintf(fpasm, "\tpush dword 1\n");
+
+  fprintf(fpasm, "fin_menor_igual_%d:\n",etiqueta);
+}
+
+void mayor_igual(FILE* fpasm, int es_variable1, int es_variable2, int etiqueta){
+  /* Obtenemos los operandos en eax y en ebx*/
+  lectura_operandos(fpasm,es_variable_1,es_variable_2);
+  /*Comparamos eax y ebx*/
+  fprintf(fpasm, "\tcmp eax,ebx\n");
+  printf(fpasm, "\tjge mayor_igual_%d\n",etiqueta);
+  /*Si no se cumple la comparacion, ponemos 0 en la pila*/
+  fprintf(fpasm, "\tpush dword 0\n");
+  /*Saltamos a la etiqueta fin*/
+  fprintf(fpasm, "\tjmp fin_mayor_igual_%d\n",etiqueta);
+  /*Si se cumple la comparacion, ponemos 1 en la pila*/
+  fprintf(fpasm, "mayor_igual_%d:\n",etiqueta);
+  fprintf(fpasm, "\tpush dword 1\n");
+
+  fprintf(fpasm, "fin_mayor_igual_%d:\n",etiqueta);
+}
+
+void menor(FILE* fpasm, int es_variable1, int es_variable2, int etiqueta){
+  /* Obtenemos los operandos en eax y en ebx*/
+  lectura_operandos(fpasm,es_variable_1,es_variable_2);
+  /*Comparamos eax y ebx*/
+  fprintf(fpasm, "\tcmp eax,ebx\n");
+  printf(fpasm, "\tjl menor_%d\n",etiqueta);
+  /*Si no se cumple la comparacion, ponemos 0 en la pila*/
+  fprintf(fpasm, "\tpush dword 0\n");
+  /*Saltamos a la etiqueta fin*/
+  fprintf(fpasm, "\tjmp fin_menor_%d\n",etiqueta);
+  /*Si se cumple la comparacion, ponemos 1 en la pila*/
+  fprintf(fpasm, "menor_%d:\n",etiqueta);
+  fprintf(fpasm, "\tpush dword 1\n");
+
+  fprintf(fpasm, "fin_menor_%d:\n",etiqueta);
+}
+
+void mayor(FILE* fpasm, int es_variable1, int es_variable2, int etiqueta){
+  /* Obtenemos los operandos en eax y en ebx*/
+  lectura_operandos(fpasm,es_variable_1,es_variable_2);
+  /*Comparamos eax y ebx*/
+  fprintf(fpasm, "\tcmp eax,ebx\n");
+  printf(fpasm, "\tjg mayor_%d\n",etiqueta);
+  /*Si no se cumple la comparacion, ponemos 0 en la pila*/
+  fprintf(fpasm, "\tpush dword 0\n");
+  /*Saltamos a la etiqueta fin*/
+  fprintf(fpasm, "\tjmp fin_mayor_%d\n",etiqueta);
+  /*Si se cumple la comparacion, ponemos 1 en la pila*/
+  fprintf(fpasm, "mayor_%d:\n",etiqueta);
+  fprintf(fpasm, "\tpush dword 1\n");
+
+  fprintf(fpasm, "fin_mayor_%d:\n",etiqueta);
+}
+
+void leer(FILE* fpasm, char* nombre, int tipo){
+  /*Introducimos la direccion*/
+  fprintf(fpasm, "\tpush dword _%s\n",nombre);
+  /*Diferenciamos entre int y booleano*/
+  if(tipo==ENTERO){
+    fprintf(fpasm, "\tcall scan_int\n");
+  }
+  if(tipo==BOOLEAN){
+    fprintf(fpasm, "\tcall scan_boolean\n");
+  }
+  /*Restauramos el puntero a pila*/
+  if(tipo==BOOLEAN||tipo==ENTERO) fprintf(fpasm, "\tadd esp, 4\n");
+}
+
+void escribir(FILE* fpasm, int es_variable, int tipo){
+  /*Introducimos la direccion*/
+  lectura_operando(fpasm,es_variable);
+  fprintf(fpasm, "\tpush dword eax\n");
+  /*Diferenciamos entre int y booleano*/
+  if(tipo==ENTERO){
+    fprintf(fpasm, "\tcall print_int\n");
+  }
+  if(tipo==BOOLEAN){
+    fprintf(fpasm, "\tcall print_boolean\n");
+  }
+  /*Restauramos el puntero a pila*/
+  if(tipo==BOOLEAN||tipo==ENTERO) fprintf(fpasm, "\tadd esp, 4\n");
 }
