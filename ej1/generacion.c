@@ -143,24 +143,53 @@ void no(FILE* fpasm, int es_variable, int cuantos_no){
   fprintf(fpasm, "push dword eax\n");
 }
 
-void suma_iterativa(FILE *fpasm, char *nombre1, char *nombre2) {
-  leer(fpasm, nombre1, 1);
-  leer(fpasm, nombre2, 1);
+void leer(FILE* fpasm, char* nombre, int tipo){
+  fprintf(fpasm, "push dword _%s\n",nombre);
 
-  fprintf(fpasm, "mov dword eax,[_x]");
-  fprintf(fpasm, "mov dword ebx,[_y]");
-  fprintf(fpasm, "while:");
-  fprintf(fpasm, "cmp ebx,0");
-  fprintf(fpasm, "jz fin");
-  fprintf(fpasm, "add eax,ebx");
-  fprintf(fpasm, "mov dword [_x], eax");
-  fprintf(fpasm, "push dword eax");
+  if (tipo == ENTERO) {
+    fprintf(fpasm, "call scan_int\n");
+  }else{
+    fprintf(fpasm, "call scan_boolean\n");
+  }
+  fprintf(fpasm, "add esp, 4\n");
+}
+
+void escribir(FILE* fpasm, int es_variable, int tipo){
+  fprintf(fpasm, "pop dword eax\n");
+
+  if (es_variable == 1) {
+    fprintf(fpasm, "push dword [eax]\n");
+  }else{
+    fprintf(fpasm, "push dword eax\n");
+  }
+
+
+  if (tipo == ENTERO) {
+    fprintf(fpasm, "call print_int\n");
+  }else{
+    fprintf(fpasm, "call print_boolean\n");
+  }
+  fprintf(fpasm, "add esp, 4\n");
+}
+
+void suma_iterativa(FILE *fpasm, char *nombre1, char *nombre2) {
+  leer(fpasm, nombre1, ENTERO);
+  leer(fpasm, nombre2, ENTERO);
+
+  fprintf(fpasm, "mov dword eax,[_x]\n");
+  fprintf(fpasm, "mov dword ebx,[_y]\n");
+  fprintf(fpasm, "while:\n");
+  fprintf(fpasm, "cmp ebx,0\n");
+  fprintf(fpasm, "jz fin\n");
+  fprintf(fpasm, "add eax,ebx\n");
+  fprintf(fpasm, "mov dword [_x], eax\n");
+  fprintf(fpasm, "push dword eax\n");
 
   escribir(fpasm,0,ENTERO);
-  leer(fpasm, nombre2, 1);
+  leer(fpasm, nombre2, ENTERO);
 
-  fprintf(fpasm, "mov dword ebx,[_y]");
-  fprintf(fpasm, "jmp while");
-  fprintf(fpasm, "fin:");
+  fprintf(fpasm, "mov dword ebx,[_y]\n");
+  fprintf(fpasm, "jmp while\n");
+  fprintf(fpasm, "fin:\n");
 
 }

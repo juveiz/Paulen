@@ -1,7 +1,5 @@
 make
-./ej1 opcional_p1.asm
-nasm -g -o opcional_p1.o -f elf opcional_p1.asm
-gcc -o opcional_p1 opcional_p1.o alfalib.o
+./ej1 ej1.asm
+nasm -g -o ej1.o -f elf32 ej1.asm
+gcc -m32 -o opcional_p1 ej1.o alfalib.o
 ./opcional_p1
-
-
