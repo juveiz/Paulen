@@ -20,18 +20,19 @@ add esp, 4
 push dword _y
 call scan_int
 add esp, 4
-mov dword eax,[_x]
+mov dword ecx,[_x]
 mov dword ebx,[_y]
 while:
 cmp ebx,0
 jz fin
-add eax,ebx
-mov dword [_x], eax
-push dword eax
+add ecx,ebx
+mov dword [_x], ecx
+push dword ecx
 pop dword eax
 push dword eax
 call print_int
 add esp, 4
+call print_endofline
 push dword _y
 call scan_int
 add esp, 4

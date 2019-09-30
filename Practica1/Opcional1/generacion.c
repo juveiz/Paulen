@@ -176,16 +176,17 @@ void suma_iterativa(FILE *fpasm, char *nombre1, char *nombre2) {
   leer(fpasm, nombre1, ENTERO);
   leer(fpasm, nombre2, ENTERO);
 
-  fprintf(fpasm, "mov dword eax,[_x]\n");
+  fprintf(fpasm, "mov dword ecx,[_x]\n");
   fprintf(fpasm, "mov dword ebx,[_y]\n");
   fprintf(fpasm, "while:\n");
   fprintf(fpasm, "cmp ebx,0\n");
   fprintf(fpasm, "jz fin\n");
-  fprintf(fpasm, "add eax,ebx\n");
-  fprintf(fpasm, "mov dword [_x], eax\n");
-  fprintf(fpasm, "push dword eax\n");
+  fprintf(fpasm, "add ecx,ebx\n");
+  fprintf(fpasm, "mov dword [_x], ecx\n");
+  fprintf(fpasm, "push dword ecx\n");
 
   escribir(fpasm,0,ENTERO);
+  fprintf(fpasm, "call print_endofline\n");
   leer(fpasm, nombre2, ENTERO);
 
   fprintf(fpasm, "mov dword ebx,[_y]\n");

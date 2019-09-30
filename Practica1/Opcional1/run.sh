@@ -1,3 +1,4 @@
+make clean
 make
 ./ej1 ej1.asm
 nasm -g -o ej1.o -f elf32 ej1.asm
