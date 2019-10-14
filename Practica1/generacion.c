@@ -7,6 +7,8 @@ void escribir_cabecera_bss(FILE* fpasm){
 
 void escribir_subseccion_data(FILE* fpasm){
         fprintf(fpasm, "segment .data\n");
+        fprintf(fpasm, "mensaje_1 db “Division por cero”, 0\n");
+        fprintf(fpasm, "mensaje_2 db “Indice incorrecto de vector”, 0\n");
 }
 
 void declarar_variable(FILE* fpasm, char * nombre, int tipo, int tamano){
@@ -30,6 +32,20 @@ void escribir_inicio_main(FILE* fpasm){
 }
 
 void escribir_fin(FILE* fpasm){
+        fprintf(fpasm, "\tjmp fin\n");
+        fprintf(fpasm, "error_1:\n");
+        fprintf(fpasm, "\tpush dword mensaje_1\n");
+        fprintf(fpasm, "\tcall print_string\n");
+        fprintf(fpasm, "\tadd esp, 4\n");
+        fprintf(fpasm, "\tjmp fin\n");
+
+        fprintf(fpasm, "error_2:\n");
+        fprintf(fpasm, "\tpush dword mensaje_2\n");
+        fprintf(fpasm, "\tcall print_string\n");
+        fprintf(fpasm, "\tadd esp, 4\n");
+        fprintf(fpasm, "\tjmp fin\n");
+
+        fprintf(fpasm, "fin:\n");
         fprintf(fpasm, "\tmov dword esp, [__esp]\n");
         fprintf(fpasm, "\tret\n");
 }
@@ -107,12 +123,15 @@ void multiplicar(FILE* fpasm, int es_variable_1, int es_variable_2){
         /* Guardamos el valor en la pila*/
         fprintf(fpasm, "push dword eax\n");
 }
-//todo: division por 0
+
 void dividir(FILE* fpasm, int es_variable_1, int es_variable_2){
         /* Obtenemos los operandos en eax y en ebx*/
         lectura_operandos(fpasm,es_variable_1,es_variable_2);
         /* Extendemos el signo */
         fprintf(fpasm, "cdq\n");
+        /*Comprobamos que el divisor no sea 0*/
+        fprintf(fpasm, "\tcmp ebx, 0\n");
+        fprintf(fpasm, "\tje error_1, 0\n");
         /* Dividimos */
         fprintf(fpasm, "idiv ebx\n");
         /* Guardamos el valor en la pila*/
@@ -350,7 +369,14 @@ void while_fin(FILE* fpasm, int etiqueta){
 
 void escribir_elemento_vector(FILE* fpasm, char* nombre_vector, int tam_max, int exp_es_direccion){
         lectura_operando(fpasm, exp_es_direccion);
-        // TODO control de errores
+
+        /*Si eax<0 o eax>=tam_max error*/
+        fprintf(fpasm, "\tcmp eax,0\n");
+        printf(fpasm, "\tjl error_2\n");
+        fprintf(fpasm, "\tcmp eax,%d-1\n",tam_max);
+        printf(fpasm, "\tjge error_2\n");
+
+
         fprintf(fpasm, "\tmov dword edx, _%s\n", nombre_vector);
         fprintf(fpasm, "\tlea eax, [edx + eax*4]\n");
         fprintf(fpasm, "\tpush dword eax\n");
@@ -385,6 +411,20 @@ void escribirVariableLocal(FILE* fpasm, int posicion_variable_local){
 }
 
 void asignarDestinoEnPila(FILE* fpasm, int es_variable);
-void operandoEnPilaAArgumento(FILE * fd_asm, int es_variable);
-void llamarFuncion(FILE * fd_asm, char * nombre_funcion, int num_argumentos);
-void limpiarPila(FILE * fd_asm, int num_argumentos);
+void operandoEnPilaAArgumento(FILE * fd_asm, int es_variable){
+  if(es_variable == 1){
+    fprintf(fpasm, "pop dword eax\n");
+    fprintf(fpasm, "mov eax, [eax]\n");
+    fprintf(fpasm, "push dword eax\n");
+  }
+}
+
+void llamarFuncion(FILE * fd_asm, char * nombre_funcion, int num_argumentos){
+  fprintf(fpasm, "call %s\n", nombre_funcion);
+  fprintf(fpasm, "add esp, 4*%d\n",num_argumentos);
+  fprintf(fpasm, "push dword eax\n");
+}
+
+void limpiarPila(FILE * fd_asm, int num_argumentos){
+  fprintf(fpasm, "add esp, 4*%d\n",num_argumentos);
+}
