@@ -297,7 +297,7 @@ void escribir(FILE* fpasm, int es_variable, int tipo){
         }
         /*Restauramos el puntero a pila*/
         if(tipo==BOOLEANO||tipo==ENTERO) fprintf(fpasm, "\tadd esp, 4\n");
-	fprintf(fpasm, "call print_endofline\n");
+        fprintf(fpasm, "call print_endofline\n");
 }
 
 
@@ -320,20 +320,20 @@ void ifthen_inicio(FILE* fpasm, int exp_es_variable, int etiqueta){
 }
 
 void ifthen_fin(FILE* fpasm, int etiqueta){
-      fprintf(fpasm, "ifthen_fin_%d:\n",etiqueta);
+        fprintf(fpasm, "ifthen_fin_%d:\n",etiqueta);
 }
 
 void ifthenelse_fin_then(FILE* fpasm, int etiqueta){
-    fprintf(fpasm, "\tjmp ifthenelse_fin_%d\n",etiqueta);
-    fprintf(fpasm, "ifthenelse_%d:\n",etiqueta);
+        fprintf(fpasm, "\tjmp ifthenelse_fin_%d\n",etiqueta);
+        fprintf(fpasm, "ifthenelse_%d:\n",etiqueta);
 }
 
 void ifthenelse_fin(FILE* fpasm, int etiqueta){
-    fprintf(fpasm, "ifthenelse_fin_%d:\n",etiqueta);
+        fprintf(fpasm, "ifthenelse_fin_%d:\n",etiqueta);
 }
 
 void while_inicio(FILE* fpasm, int etiqueta){
-  fprintf(fpasm, "while_%d:\n",etiqueta);
+        fprintf(fpasm, "while_%d:\n",etiqueta);
 }
 
 void while_exp_pila(FILE* fpasm, int exp_es_variable, int etiqueta){
@@ -345,8 +345,8 @@ void while_exp_pila(FILE* fpasm, int exp_es_variable, int etiqueta){
         fprintf(fpasm, "\tje while_fin_%d\n",etiqueta);
 }
 void while_fin(FILE* fpasm, int etiqueta){
-      fprintf(fpasm, "\tjmp while_%d\n",etiqueta);
-      fprintf(fpasm, "while_fin_%d:\n",etiqueta);
+        fprintf(fpasm, "\tjmp while_%d\n",etiqueta);
+        fprintf(fpasm, "while_fin_%d:\n",etiqueta);
 }
 
 void escribir_elemento_vector(FILE* fpasm, char* nombre_vector, int tam_max, int exp_es_direccion){
