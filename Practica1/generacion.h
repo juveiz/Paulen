@@ -146,10 +146,10 @@ void while_fin(FILE* fpasm, int etiqueta);
 
 void escribir_elemento_vector(FILE* fpasm, char* nombre_vector, int tam_max, int exp_es_direccion);
 
-void declararfuncion(FILE* fd_asm, char* nombre_funcion, int num_var_loc);
-void retornarfuncion(FILE* fd_asm, int es_variable);
+void declararFuncion(FILE* fd_asm, char* nombre_funcion, int num_var_loc);
+void retornarFuncion(FILE* fd_asm, int es_variable);
 
-void escribirParamento(FILE* fpasm, int pos_parametro, int num_total_parametros);
+void escribirParametro(FILE* fpasm, int pos_parametro, int num_total_parametros);
 void escribirVariableLocal(FILE* fpasm, int posicion_variable_local);
 
 void asignarDestinoEnPila(FILE* fpasm, int es_variable);
