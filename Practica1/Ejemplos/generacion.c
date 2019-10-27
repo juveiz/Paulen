@@ -7,8 +7,8 @@ void escribir_cabecera_bss(FILE* fpasm){
 
 void escribir_subseccion_data(FILE* fpasm){
         fprintf(fpasm, "segment .data\n");
-        fprintf(fpasm, "mensaje_1 db “Division por cero”, 0\n");
-        fprintf(fpasm, "mensaje_2 db “Indice incorrecto de vector”, 0\n");
+        fprintf(fpasm, "\tmensaje_1 db \"Division por cero\",10,0\n");
+        fprintf(fpasm, "\tmensaje_2 db \"Indice incorrecto de vector\",10,0\n");
 }
 
 void declarar_variable(FILE* fpasm, char * nombre, int tipo, int tamano){
@@ -132,10 +132,11 @@ void dividir(FILE* fpasm, int es_variable_1, int es_variable_2){
         fprintf(fpasm, "\tcdq\n");
         /*Comprobamos que el divisor no sea 0*/
         fprintf(fpasm, "\tcmp ebx, 0\n");
-        fprintf(fpasm, "\tje error_1, 0\n");
+        fprintf(fpasm, "\tje error_1\n");
         /* Dividimos */
         fprintf(fpasm, "\tidiv ebx\n");
         /* Guardamos el valor en la pila*/
+        fprintf(fpasm, "\tpush dword eax\n");
 }
 
 void o(FILE* fpasm, int es_variable_1, int es_variable_2){
@@ -169,18 +170,18 @@ void no(FILE* fpasm, int es_variable, int cuantos_no){
         /* Obtenemos los operandos en eax */
         lectura_operando(fpasm,es_variable);
         /* Ponemos 0 en ebx */
-        fprintf(fpasm, "\tmov ebx 0\n");
+        fprintf(fpasm, "\tmov ebx, 0\n");
         /* Vemos si es 0 */
         fprintf(fpasm, "\tcmp eax, ebx\n");
         /* Si es 0 saltamos y cambiamos a 1 */
         fprintf(fpasm, "\tjz cero_no_%d\n",cuantos_no);
         /* Si no lo es, lo cambiamos a 0 */
-        fprintf(fpasm, "\tmov eax 0\n");
+        fprintf(fpasm, "\tmov eax, 0\n");
         /* Saltamos al final */
         fprintf(fpasm, "\tjmp fin_no_%d\n",cuantos_no);
 
         fprintf(fpasm, "cero_no_%d:\n",cuantos_no);
-        fprintf(fpasm, "\tmov eax 1\n");
+        fprintf(fpasm, "\tmov eax, 1\n");
 
         fprintf(fpasm, "fin_no_%d:\n",cuantos_no);
         /* Ponemos el nuevo valor */
@@ -215,7 +216,7 @@ void distinto(FILE* fpasm, int es_variable1, int es_variable2, int etiqueta){
         /*Saltamos a la etiqueta fin*/
         fprintf(fpasm, "\tjmp fin_distinto_%d\n",etiqueta);
         /*Si se cumple la comparacion, ponemos 1 en la pila*/
-        fprintf(fpasm, "dstinto_%d:\n",etiqueta);
+        fprintf(fpasm, "distinto_%d:\n",etiqueta);
         fprintf(fpasm, "\tpush dword 1\n");
 
         fprintf(fpasm, "fin_distinto_%d:\n",etiqueta);
@@ -373,28 +374,28 @@ void escribir_elemento_vector(FILE* fpasm, char* nombre_vector, int tam_max, int
         /*Si eax<0 o eax>=tam_max error*/
         fprintf(fpasm, "\tcmp eax,0\n");
         fprintf(fpasm, "\tjl error_2\n");
-        fprintf(fpasm, "\tcmp eax,%d-1\n",tam_max);
+        fprintf(fpasm, "\tcmp eax,%d\n",tam_max);
         fprintf(fpasm, "\tjge error_2\n");
         fprintf(fpasm, "\tmov dword edx, _%s\n", nombre_vector);
         fprintf(fpasm, "\tlea eax, [edx + eax*4]\n");
         fprintf(fpasm, "\tpush dword eax\n");
 }
 
-void declararfuncion(FILE* fd_asm, char* nombre_funcion, int num_var_loc){
+void declararFuncion(FILE* fd_asm, char* nombre_funcion, int num_var_loc){
         fprintf(fd_asm, "_%s:\n", nombre_funcion);
         fprintf(fd_asm, "\tpush dword ebp\n");
         fprintf(fd_asm, "\tmov dword ebp, esp\n");
         fprintf(fd_asm, "\tsub esp, 4*%d\n", num_var_loc);
 }
 
-void retornarfuncion(FILE* fd_asm, int es_variable){
+void retornarFuncion(FILE* fd_asm, int es_variable){
         lectura_operando(fd_asm, es_variable);
         fprintf(fd_asm, "\tmov dword esp,ebp\n");
         fprintf(fd_asm, "\tpop dword ebp\n");
         fprintf(fd_asm, "\tret\n");
 }
 
-void escribirParamento(FILE* fpasm, int pos_parametro, int num_total_parametros){
+void escribirParametro(FILE* fpasm, int pos_parametro, int num_total_parametros){
         int d_ebp;
         d_ebp = 4*( 1 + (num_total_parametros - pos_parametro));
         fprintf(fpasm, "\tlea eax, [ebp + %d]\n", d_ebp);
