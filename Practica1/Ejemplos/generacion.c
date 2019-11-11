@@ -409,7 +409,11 @@ void escribirVariableLocal(FILE* fpasm, int posicion_variable_local){
         fprintf(fpasm, "\tpush dword eax\n");
 }
 
-void asignarDestinoEnPila(FILE* fpasm, int es_variable);
+void asignarDestinoEnPila(FILE* fpasm, int es_variable){
+        lectura_operandos(fpasm, es_variable, 0);
+        fprintf(fpasm, "\tmov dword [ebx], eax\n");
+}
+
 void operandoEnPilaAArgumento(FILE * fd_asm, int es_variable){
         if(es_variable == 1) {
                 fprintf(fd_asm, "pop dword eax\n");
