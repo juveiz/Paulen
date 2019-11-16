@@ -1,12 +1,12 @@
 CC = gcc
 CFLAGS = -g -Wall
 LIBS = tokens.h lex.yy.c
-EJS = ejemplo
+EJS = pruebaMorfo
 
 all: $(EJS)
 
-ejemplo:
-	$(CC) $(CFLAGS) main.c $(LIBS) -o ejemplo
+pruebaMorfo:
+	$(CC) $(CFLAGS) main.c $(LIBS) -o pruebaMorfo
 
 clean:
-	rm -rf *.o $(EJS) 
+	rm -rf *.o $(EJS)

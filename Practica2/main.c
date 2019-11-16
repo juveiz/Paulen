@@ -156,7 +156,7 @@ int main(int argc, char const *argv[]) {
     if (simbolo == TOK_ERROR){
       fprintf(stderr, "****Error en [lin %li, col %li]: ",nline,ncolumn);
       if (yyleng > 100){
-        fprintf(stderr, "identificador demasiado largo\n");
+        fprintf(stderr, "identificador demasiado largo (%s)\n",yytext);
       }else{
         fprintf(stderr, "simbolo no permitido (%s)\n",yytext);
       }

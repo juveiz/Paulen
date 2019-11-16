@@ -69,8 +69,6 @@ true { ncolumn+=yyleng; return TOK_TRUE; }
 false { ncolumn+=yyleng; return TOK_FALSE; }
 
 \n { nline++; ncolumn = 1;}
-
-" " { ncolumn+=yyleng; }
 \t { ncolumn+=yyleng; }
 
 [a-zA-Z][a-zA-Z0-9]{0,99} { ncolumn+=yyleng; return TOK_IDENTIFICADOR; }
