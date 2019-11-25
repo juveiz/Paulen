@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "tablasimbolos.h"
 
 #define GLOBAL 0
 #define LOCAL 1
@@ -58,13 +58,13 @@ int main(int argc, char const *argv[]) {
         /* Variable*/
         if (flag == LOCAL){
           if(insertarVariableLoacal() == 0){
-            fprintf(salida, "%s\n",indentificador);
+            fprintf(salida, "%s\n",identificador);
           }else{
             fprintf(salida, "-1\t%s\n",identificador);
           }
         }else{
           if(insertarVariableGlobal() == 0){
-            fprintf(salida, "%s\n",indentificador);
+            fprintf(salida, "%s\n",identificador);
           }else{
             fprintf(salida, "-1\t%s\n",identificador);
             }
@@ -76,7 +76,7 @@ int main(int argc, char const *argv[]) {
           fprintf(salida, "No se puede anidar funciones\n");
         }else{
           if (insertarFUncion() == 0){
-            fprintf(salida, "%s\n",indentificador);
+            fprintf(salida, "%s\n",identificador);
           }else{
             fprintf(salida, "-1\t%s\n",identificador);
           }

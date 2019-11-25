@@ -1,6 +1,4 @@
-#include "uthash.h"
-#include <stdio.h>
-
+#include "tablasimbolos.h"
 
 typedef struct _simboloTabla{
     char * identificador;
