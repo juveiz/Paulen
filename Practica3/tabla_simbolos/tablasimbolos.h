@@ -8,6 +8,9 @@ typedef struct _simboloTabla simboloTabla;
 
 typedef struct _tablaSimbolos tablaSimbolos;
 
+char * getIdentificador(simboloTabla * simbolo);
+
+int getValor(simboloTabla * simbolo);
 
 tablaSimbolos * createTablaSimbolos();
 

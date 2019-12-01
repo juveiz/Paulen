@@ -5,13 +5,16 @@
 
 #define GLOBAL 0
 #define LOCAL 1
+#define MAX 200
 
 int main(int argc, char const *argv[]) {
   FILE* entrada,*salida;
   char *linea = NULL;
-  int tam_linea,res,num,flag = GLOBAL;
+  int res,num,flag = GLOBAL;
   char *identificador,*numero;
+  size_t tam_linea = MAX;
   simboloTabla *simbolo;
+  tablaSimbolos *tabla;
 
   if (argc < 3){
     printf("No hay suficientes parametros.Programa entrada salida\n");
@@ -30,40 +33,58 @@ int main(int argc, char const *argv[]) {
     printf("Error al abrir el archivo salida\n");
     return 1;
   }
+
+  tabla = createTablaSimbolos();
+  if (tabla == NULL){
+    fclose(entrada);
+    fclose(salida);
+    printf("Error al crear la tabla de simbolos\n");
+    return 1;
+  }
+
+  linea = (char*)malloc(sizeof(char) * (MAX + 1));
+  if (linea == NULL){
+    fclose(entrada);
+    fclose(salida);
+    deleteTablaSimbolos(tabla);
+    printf("Error al crear memoria\n");
+    return 1;
+  }
   while((res = getline(&linea,&tam_linea,entrada)) != -1){
     int i;
     identificador = linea;
     numero = NULL;
 
     for(i=0; i < tam_linea;i++){
-      if (linea[i] == '\t'){
+      if (linea[i] == '\t' || linea[i] == ' '){
         linea[i] = '\0';
-        numero = linea + 1;
+        numero = &linea[i+1];
       }
       if(linea[i] == '\n'){
         linea[i] = '\0';
+        break;
       }
     }
 
     if (numero){
       num = atoi(numero);
     }
-
+    
     if (numero != NULL && identificador != NULL){
       if(strcmp(identificador,"cierre") == 0 && num == -999){
         /* Cierre */
-        cerrarAmbitoLocal();
+        limpiarAmbitoLocal(tabla);
         fprintf(salida, "cierre\n");
       }else if (num >= 0){
         /* Variable*/
         if (flag == LOCAL){
-          if(insertarVariableLoacal() == 0){
+          if(insertarAmbitoLocal(tabla,identificador,num) == 0){
             fprintf(salida, "%s\n",identificador);
           }else{
             fprintf(salida, "-1\t%s\n",identificador);
           }
         }else{
-          if(insertarVariableGlobal() == 0){
+          if(insertarAmbitoGlobal(tabla,identificador,num) == 0){
             fprintf(salida, "%s\n",identificador);
           }else{
             fprintf(salida, "-1\t%s\n",identificador);
@@ -75,7 +96,7 @@ int main(int argc, char const *argv[]) {
         if (flag == LOCAL){
           fprintf(salida, "No se puede anidar funciones\n");
         }else{
-          if (insertarFUncion() == 0){
+          if (aperturaAmbitoLocal(tabla,identificador,num) == 0){
             fprintf(salida, "%s\n",identificador);
           }else{
             fprintf(salida, "-1\t%s\n",identificador);
@@ -86,9 +107,9 @@ int main(int argc, char const *argv[]) {
       simbolo = NULL;
       /* Buscar identificador */
       if (flag == GLOBAL){
-          simbolo = buscarSimboloGlobal();
+          simbolo = buscarAmbitoGlobal(tabla,identificador);
       }else if (flag == LOCAL){
-        simbolo = buscarSimboloLocal();
+        simbolo = buscarAmbitoLocal(tabla,identificador);
       }else{
         fprintf(salida, "Error en la ejecucion del programa\n");
       }
@@ -96,7 +117,7 @@ int main(int argc, char const *argv[]) {
       if (simbolo == NULL){
         fprintf(salida, "%s\t-1\n",identificador);
       }else{
-        fprintf(salida, "%s\t%d\n",identificador,getId(simbolo));
+        fprintf(salida, "%s\t%d\n",identificador,getValor(simbolo));
       }
 
 
@@ -106,6 +127,7 @@ int main(int argc, char const *argv[]) {
 
   }
 
+  deleteTablaSimbolos(tabla);
   fclose(entrada);
   fclose(salida);
   return 0;
