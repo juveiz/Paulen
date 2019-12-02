@@ -58,7 +58,7 @@ int main(int argc, char const *argv[]) {
     for(i=0; i < tam_linea;i++){
       if (linea[i] == '\t' || linea[i] == ' '){
         linea[i] = '\0';
-        numero = &linea[i+1];
+        numero = linea + i + 1 ;
       }
       if(linea[i] == '\n' || linea[i] == '\r'){
         linea[i] = '\0';
@@ -107,13 +107,9 @@ int main(int argc, char const *argv[]) {
       simbolo = NULL;
       /* Buscar identificador */
       if (ambito_local == 0){
-        printf("Aqui buscamos global %s\n",identificador);
-          simbolo = buscarAmbitoGlobal(tabla,identificador);
-          //printf("%s %d",getIdentificador(simbolo),getValor(simbolo));
+        simbolo = buscarAmbitoGlobal(tabla,identificador);
       }else if (ambito_local > 0){
         simbolo = buscarAmbitoLocal(tabla,identificador,ambito_local-1);
-        printf("Aqui buscamos local %s\n",identificador);
-                  //printf("%s %d",getIdentificador(simbolo),getValor(simbolo));
 
       }else{
         fprintf(salida, "Error en la ejecucion del programa\n");

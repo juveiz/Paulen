@@ -23,7 +23,6 @@ int getValor(simboloTabla * simbolo){
 simboloTabla *find_simbolo(simboloTabla ** tabla, char * identificador) {
     simboloTabla *s;
     if (*tabla == NULL){
-      printf("Hola");
       return NULL;
     }
     HASH_FIND_STR( *tabla, identificador, s);
@@ -108,14 +107,22 @@ void deleteTablaSimbolos(tablaSimbolos * tabla) {
 }
 
 simboloTabla * buscarAmbitoGlobal(tablaSimbolos * tabla, char * identificador){
-  printf("%s111",identificador);
   return find_simbolo(tabla->global, identificador);
 }
 
 simboloTabla * buscarAmbitoLocal(tablaSimbolos * tabla, char * identificador, int indice){
-  simboloTabla * s;
+  simboloTabla * s = NULL;
+  int i;
   if(indice<0 || indice > TABLA_SIMBOLOS_LOCAL_NIVELES) return NULL;
-  s = find_simbolo(&(tabla->local[indice]), identificador);
+  printf("INDICE %d\n",indice);
+  for(i=indice;i>=0;i--){
+    s = find_simbolo(&(tabla->local[i]), identificador);
+    
+    if (s != NULL){
+      printf("%s %d\n",s->identificador,s->valor);
+      break;
+    }
+  }
   if( s == NULL)
     return find_simbolo(tabla->global, identificador);
 
@@ -133,11 +140,21 @@ int insertarAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor, 
 
 int aperturaAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor, int indice){
   if(indice<0 || indice > TABLA_SIMBOLOS_LOCAL_NIVELES) return -1;
-  if(insertarAmbitoGlobal(tabla,identificador, valor) == -1) return -1;
-  if(insertarAmbitoLocal(tabla, identificador, valor, indice) == -1){
-    delete_simbolo(tabla->global, find_simbolo(tabla->global, identificador));
-    return -1;
+  if (indice == 0){
+    if(insertarAmbitoGlobal(tabla,identificador, valor) == -1) return -1;
+    if(insertarAmbitoLocal(tabla, identificador, valor, indice) == -1){
+      delete_simbolo(tabla->global, find_simbolo(tabla->global, identificador));
+      return -1;
+    }
+  }else{
+    if (insertarAmbitoLocal(tabla, identificador, valor, indice-1) == -1) return -1;
+    if(insertarAmbitoLocal(tabla, identificador, valor, indice) == -1){
+      delete_simbolo(&(tabla->global[indice -1]), find_simbolo(&(tabla->global[indice -1]), identificador));
+      return -1;
+    }
   }
+  
+  
   return 0;
 }
 

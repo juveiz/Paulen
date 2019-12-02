@@ -46,7 +46,7 @@ tres
 uno	13
 dos	14
 tres	15
-cuatro	-1
+cuatro	12
 funcion5	-1
 cierre
 funcion3	-10
@@ -70,7 +70,7 @@ dos	2
 tres	-1
 cuatro	-1
 funcion1	-10
-funcion2	-10
-funcion3	-10
-funcion4	-10
+funcion2	-1
+funcion3	-1
+funcion4	-1
 funcion5	-1
