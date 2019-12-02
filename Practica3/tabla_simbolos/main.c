@@ -5,16 +5,18 @@
 
 #define GLOBAL 0
 #define LOCAL 1
-#define MAX 200
+#define MAX 256
 
 int main(int argc, char const *argv[]) {
   FILE* entrada,*salida;
   char *linea = NULL;
-  int res,num,flag = GLOBAL;
+  int num,flag = GLOBAL;
   char *identificador,*numero;
   size_t tam_linea = MAX;
   simboloTabla *simbolo;
   tablaSimbolos *tabla;
+  int i;
+
 
   if (argc < 3){
     printf("No hay suficientes parametros.Programa entrada salida\n");
@@ -42,7 +44,7 @@ int main(int argc, char const *argv[]) {
     return 1;
   }
 
-  linea = (char*)malloc(sizeof(char) * (MAX + 1));
+  linea = (char*)malloc(sizeof(char) * MAX);
   if (linea == NULL){
     fclose(entrada);
     fclose(salida);
@@ -50,8 +52,7 @@ int main(int argc, char const *argv[]) {
     printf("Error al crear memoria\n");
     return 1;
   }
-  while((res = getline(&linea,&tam_linea,entrada)) != -1){
-    int i;
+  while(getline(&linea,&tam_linea,entrada) != -1){
     identificador = linea;
     numero = NULL;
 
@@ -97,6 +98,7 @@ int main(int argc, char const *argv[]) {
           fprintf(salida, "No se puede anidar funciones\n");
         }else{
           if (aperturaAmbitoLocal(tabla,identificador,num) == 0){
+            flag = LOCAL;
             fprintf(salida, "%s\n",identificador);
           }else{
             fprintf(salida, "-1\t%s\n",identificador);
@@ -126,9 +128,9 @@ int main(int argc, char const *argv[]) {
     }
 
   }
-
-  deleteTablaSimbolos(tabla);
   fclose(entrada);
   fclose(salida);
+  free(linea);
+  deleteTablaSimbolos(tabla);
   return 0;
 }

@@ -22,7 +22,9 @@ int getValor(simboloTabla * simbolo){
 
 simboloTabla *find_simbolo(simboloTabla ** tabla, char * identificador) {
     simboloTabla *s;
-
+    if (*tabla == NULL){
+      return NULL;
+    }
     HASH_FIND_STR( *tabla, identificador, s);
     return s;
 }
@@ -35,14 +37,18 @@ int add_simbolo(simboloTabla ** tabla, char * identificador, int valor) {
   elemento = (simboloTabla *) malloc(sizeof(simboloTabla));
   if(elemento == NULL) return -1;
 
-  elemento->identificador = (char *) malloc(sizeof(char)*strlen(identificador));
+  elemento->identificador = (char *) malloc(sizeof(char)*(strlen(identificador) + 1));
   if(elemento->identificador == NULL){
     free(elemento);
     return -1;
   }
   strcpy(elemento->identificador, identificador);
   elemento->valor = valor;
+      
   HASH_ADD_STR(*tabla, identificador, elemento);
+  
+  
+  
   return 0;
 }
 
@@ -56,6 +62,7 @@ void delete_all(simboloTabla ** tabla) {
 
   HASH_ITER(hh, *tabla, elemento, tmp) {
     HASH_DEL( *tabla,elemento);
+    free(elemento->identificador);
     free(elemento);
   }
 }
@@ -67,11 +74,21 @@ tablaSimbolos * createTablaSimbolos(){
   tabla = (tablaSimbolos *) malloc(sizeof(tablaSimbolos));
   if(tabla == NULL) return NULL;
 
-  tabla->global = NULL;
+  tabla->global = (simboloTabla ** ) malloc(sizeof(simboloTabla *));
+  if(tabla->global == NULL) {
+    free(tabla);
+    return NULL;
+  }
 
-  tabla->local = NULL;
+  tabla->local = (simboloTabla ** ) malloc(sizeof(simboloTabla *));
+  if(tabla->local == NULL) {
+    free(tabla->global);
+    free(tabla);
+    return NULL;
+  }
 
-
+  *(tabla->global) = NULL;
+  *(tabla->local) = NULL;
   return tabla;
 }
 
@@ -112,5 +129,5 @@ int aperturaAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor){
 
 void limpiarAmbitoLocal(tablaSimbolos * tabla){
   delete_all(tabla->local);
-  tabla->local = NULL;
+  *(tabla->local)=NULL;
 }
