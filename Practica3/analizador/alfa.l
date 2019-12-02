@@ -19,7 +19,7 @@ menos "-"
 division "/"
 asterisco "*"
 and "&&"
-or "|"
+or "||"
 not "!"
 igual "=="
 distinto "!="
@@ -74,8 +74,8 @@ false { fprintf(out,";D:\t%s\n", yytext); ncolumn+=yyleng; return TOK_FALSE; }
 " " { ncolumn+=yyleng; }
 
 [a-zA-Z][a-zA-Z0-9]{0,99} { fprintf(out,";D:\t%s\n", yytext); ncolumn+=yyleng; return TOK_IDENTIFICADOR; }
-[a-zA-Z][a-zA-Z0-9]{100,} { is_morpho = 1; return TOK_ERROR;}
+[a-zA-Z][a-zA-Z0-9]{100,} { is_morpho = 1; ncolumn-=yyleng; return TOK_ERROR;}
 [0-9]+ { fprintf(out,";D:\t%s\n", yytext); ncolumn+=yyleng; return TOK_CONSTANTE_ENTERA; }
 
-. { is_morpho = 1; return TOK_ERROR; }
+. { is_morpho = 1; ncolumn-=yyleng; return TOK_ERROR; }
 %%
