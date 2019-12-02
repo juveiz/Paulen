@@ -44,11 +44,11 @@ int add_simbolo(simboloTabla ** tabla, char * identificador, int valor) {
   }
   strcpy(elemento->identificador, identificador);
   elemento->valor = valor;
-      
+
   HASH_ADD_STR(*tabla, identificador, elemento);
-  
-  
-  
+
+
+
   return 0;
 }
 
@@ -122,9 +122,12 @@ int insertarAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor){
 }
 
 int aperturaAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor){
-
   if(insertarAmbitoGlobal(tabla,identificador, valor) == -1) return -1;
-  return insertarAmbitoLocal(tabla, identificador, valor);
+  if(insertarAmbitoLocal(tabla, identificador, valor) == -1){
+    delete_simbolo(tabla->global, find_simbolo(tabla->global, identificador));
+    return -1;
+  }
+  return 0;
 }
 
 void limpiarAmbitoLocal(tablaSimbolos * tabla){
