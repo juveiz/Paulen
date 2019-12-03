@@ -114,12 +114,10 @@ simboloTabla * buscarAmbitoLocal(tablaSimbolos * tabla, char * identificador, in
   simboloTabla * s = NULL;
   int i;
   if(indice<0 || indice > TABLA_SIMBOLOS_LOCAL_NIVELES) return NULL;
-  printf("INDICE %d\n",indice);
   for(i=indice;i>=0;i--){
     s = find_simbolo(&(tabla->local[i]), identificador);
     
     if (s != NULL){
-      printf("%s %d\n",s->identificador,s->valor);
       break;
     }
   }
