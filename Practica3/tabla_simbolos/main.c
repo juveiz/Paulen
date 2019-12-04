@@ -59,7 +59,7 @@ int main(int argc, char const *argv[]) {
     for(i=0; i < tam_linea;i++){
       if (linea[i] == '\t' || linea[i] == ' '){
         linea[i] = '\0';
-        numero = &linea[i+1];
+        numero = linea + i + 1;
       }
       if(linea[i] == '\n'){
         linea[i] = '\0';
