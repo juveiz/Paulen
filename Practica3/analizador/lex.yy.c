@@ -1069,7 +1069,7 @@ YY_RULE_SETUP
 case 41:
 YY_RULE_SETUP
 #line 77 "alfa.l"
-{ is_morpho = 1; ncolumn-=yyleng; return TOK_ERROR;}
+{ is_morpho = 1; return TOK_ERROR;}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
@@ -1079,7 +1079,7 @@ YY_RULE_SETUP
 case 43:
 YY_RULE_SETUP
 #line 80 "alfa.l"
-{ is_morpho = 1; ncolumn-=yyleng; return TOK_ERROR; }
+{ is_morpho = 1; return TOK_ERROR; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP

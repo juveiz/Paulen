@@ -6,9 +6,9 @@ int yyparse();
 
 void yyerror(const char * s) {
   extern long nline, ncolumn;
-  extern int is_morpho;
+  extern int is_morpho, yyleng;
   if (!is_morpho) {
-    printf("****Error sintactico en [lin %ld, col %ld]\n", nline, ncolumn);
+    printf("****Error sintactico en [lin %ld, col %ld]\n", nline, ncolumn-yyleng);
   }
 }
 
