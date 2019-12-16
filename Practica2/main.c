@@ -166,5 +166,7 @@ int main(int argc, char const *argv[]) {
     }
     fprintf(salida, "%s\t%d\t%s\n",stringToken(simbolo),simbolo,yytext);
   }
+  fclose(yyin);
+  fclose(salida);
   return 0;
 }
