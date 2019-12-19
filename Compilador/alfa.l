@@ -1,5 +1,5 @@
 %{
-#include "alfa.tab.h"
+#include "alfa.h"
 FILE* out;
 long nline = 1, ncolumn = 1;
 int is_morpho = 0;
