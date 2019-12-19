@@ -5,6 +5,7 @@
   #include "tablasimbolos.h"
   extern FILE* out;
   extern void yyerror(const char * s);
+  extern long nline;
   int yylex();
   tablaSimbolos *tabla;
   int ambito = GLOBAL;
@@ -14,7 +15,7 @@
   int valor;
   int longitud;
   int num_parametros;
-  int posicion;
+  int posicion = 1;
 
 %}
 %union
@@ -69,13 +70,13 @@
 %type <atributos> comparacion
 
 %%
-programa: TOK_MAIN inicioTabla TOK_LLAVEIZQUIERDA declaraciones escritura_TS funciones escritura_main sentencias TOK_LLAVEDERECHA escribir fin
+programa: TOK_MAIN inicioTabla TOK_LLAVEIZQUIERDA declaraciones escritura_TS funciones escritura_main sentencias TOK_LLAVEDERECHA escribir_fin
 {fprintf(out, ";R1:\t<programa> ::= main { <declaraciones> <funciones> <sentencias> }\n");};
 
 inicioTabla: {
   tabla = createTablaSimbolos();
   if (tabla == NULL){
-    printf("Error al crear la tabla de simbolos"); // Cambiar enunciado
+    printf("Error en la tabla de simbolos: No se ha creado la tabla de simbolos\n");
     return;
   }
 }
@@ -94,21 +95,29 @@ escritura_main: {
 
 escribir_fin:{
   escribir_fin(out);
+  deleteTablaSimbolos(tabla);
 }
 declaraciones:  declaracion {fprintf(out,";R2:\t<declaraciones> ::= <declaracion>\n");}
               | declaracion declaraciones {fprintf(out,";R3:\t<declaraciones> ::= <declaracion> <declaraciones>\n");};
 
 declaracion: clase identificadores TOK_PUNTOYCOMA {fprintf(out,";R4:\t<declaracion> ::= <clase> <identificadores> ;\n");};
 
-clase:  clase_escalar {fprintf(out,";R5:\t<clase> ::= <clase_escalar>\n");}
-      | clase_vector {fprintf(out,";R7:\t<clase> ::= <clase_vector>\n");};
+clase:  clase_escalar {fprintf(out,";R5:\t<clase> ::= <clase_escalar>\n"); categoria = ESCALAR;}
+      | clase_vector {fprintf(out,";R7:\t<clase> ::= <clase_vector>\n"); categoria = VECTOR;};
 
 clase_escalar: tipo {fprintf(out,";R9:\t<clase_escalar> ::= <tipo>\n");};
 
-tipo:   TOK_INT {fprintf(out,";R10:\t<tipo> ::= int\n");}
-      | TOK_BOOLEAN {fprintf(out,";R11:\t<tipo> ::= boolean\n");};
+tipo:   TOK_INT {fprintf(out,";R10:\t<tipo> ::= int\n"); tipo = ENTERO;}
+      | TOK_BOOLEAN {fprintf(out,";R11:\t<tipo> ::= boolean\n"); tipo = BOOLEANO;};
 
-clase_vector: TOK_ARRAY tipo TOK_CORCHETEIZQUIERDO constante_entera TOK_CORCHETEDERECHO{fprintf(out,";R15\t<clase_vector> ::= array <tipo> [<constante_entera>]\n");};
+clase_vector: TOK_ARRAY tipo TOK_CORCHETEIZQUIERDO TOK_CONSTANTE_ENTERA TOK_CORCHETEDERECHO
+              {fprintf(out,";R15\t<clase_vector> ::= array <tipo> [<constante_entera>]\n");
+                longitud = $4.valor_entero;
+                if(longitud < 1 ||longitud > MAX_TAMANIO_VECTOR){
+                  printf("****Error semantico en lin %li: El tamanyo del vector excede los limites permitidos (1,64).\n",nline);
+                  deleteTablaSimbolos(tabla);
+                  return;
+                }};
 
 identificadores:   identificador {fprintf(out,";R18:\t<identificadores> ::= <identificador>\n");}
                   | identificador TOK_COMA identificadores {fprintf(out,";R19:\t<identificadores> ::= <identificador> , <identificadores>\n");};
@@ -205,7 +214,8 @@ identificador: TOK_IDENTIFICADOR
         SIMBOLO sim;
         sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
         if (sim.identificador == NULL){
-          printf("Error");//cambiar bien
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
           return;
         }
         strcpy(sim.identificador,$s1.lexema);
@@ -216,10 +226,49 @@ identificador: TOK_IDENTIFICADOR
         sim.longitud = longitud;
         sim.num_parametros = num_parametros;
         sim.posicion = posicion;
-        if (insertarAmbitoGlobal(tabla, $s1.lexema,sim) == -1){
-          printf("Error");//cambiar bien
+        if (insertarAmbitoGlobal(tabla, $1.lexema,sim) == -1){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
           return;
         }
+      }else{
+        printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+        deleteTablaSimbolos(tabla);
+        return;
       }
-    } //Falta ambito local
+    }else{
+      if (buscarAmbitoLocal(tabla,$1.lexema) == NULL){
+        SIMBOLO sim;
+        posicion ++;
+        sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+        if (sim.identificador == NULL){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return;
+        }
+        strcpy(sim.identificador,$s1.lexema);
+        sim.cat_simbolo = cat_simbolo;
+        if (tipo != ESCALAR){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return;
+        }
+        sim.tipo = tipo;
+        sim.categoria = categoria;
+        sim.valor = valor;
+        sim.longitud = longitud;
+        // Revisar las dos siguientes
+        sim.num_parametros = num_parametros;
+        sim.posicion = posicion;
+        if (insertarAmbitoLocal(tabla, $1.lexema,sim) == -1){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return;
+        }
+      }else{
+        printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+        deleteTablaSimbolos(tabla);
+        return;
+      }
+    }
     };
