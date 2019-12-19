@@ -3,6 +3,7 @@
 
 #include "uthash.h"
 #include <stdio.h>
+#include "alfa.h"
 
 typedef struct _simboloTabla simboloTabla;
 
@@ -10,7 +11,7 @@ typedef struct _tablaSimbolos tablaSimbolos;
 
 char * getIdentificador(simboloTabla * simbolo);
 
-int getValor(simboloTabla * simbolo);
+SIMBOLO * getValor(simboloTabla * simbolo);
 
 tablaSimbolos * createTablaSimbolos();
 
@@ -20,11 +21,11 @@ simboloTabla * buscarAmbitoGlobal(tablaSimbolos * tabla, char * identificador);
 
 simboloTabla * buscarAmbitoLocal(tablaSimbolos * tabla, char * identificador);
 
-int insertarAmbitoGlobal(tablaSimbolos * tabla, char * identificador, int valor);
+int insertarAmbitoGlobal(tablaSimbolos * tabla, char * identificador, SIMBOLO * valor);
 
-int insertarAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor);
+int insertarAmbitoLocal(tablaSimbolos * tabla, char * identificador, SIMBOLO * valor);
 
-int aperturaAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor);
+int aperturaAmbitoLocal(tablaSimbolos * tabla, char * identificador, SIMBOLO * valor);
 
 void limpiarAmbitoLocal(tablaSimbolos * tabla);
 #endif

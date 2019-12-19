@@ -2,13 +2,9 @@
 #define _ALFA_H
 #define MAX_LONG_ID 100
 #define MAX_TAMANIO_VECTOR 64
-#define INT 0
-#define BOOLEAN 1
 #define GLOBAL 0
 #define LOCAL 1
-#define ESCALAR 1
-#define VECTOR 2
-...
+
 /* otros defines */
 typedef struct
 {
@@ -17,7 +13,7 @@ typedef struct
  int valor_entero;
  int es_direccion;
  int etiqueta;
-}tipo_atributos;
+} tipo_atributos;
 
 /* Categoría de un símbolo: variable, parámetro de función o función */
 typedef enum { VARIABLE, PARAMETRO, FUNCION } CATEGORIA_SIMBOLO;

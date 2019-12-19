@@ -2,7 +2,7 @@
 
 typedef struct _simboloTabla{
     char * identificador;
-    int valor;
+    SIMBOLO * valor;
     UT_hash_handle hh;
 } simboloTabla;
 
@@ -16,7 +16,7 @@ char * getIdentificador(simboloTabla * simbolo){
   return simbolo->identificador;
 }
 
-int getValor(simboloTabla * simbolo){
+SIMBOLO * getValor(simboloTabla * simbolo){
   return simbolo->valor;
 }
 
@@ -29,7 +29,7 @@ simboloTabla *find_simbolo(simboloTabla ** tabla, char * identificador) {
     return s;
 }
 
-int add_simbolo(simboloTabla ** tabla, char * identificador, int valor) {
+int add_simbolo(simboloTabla ** tabla, char * identificador, SIMBOLO * simbolo) {
   simboloTabla * elemento;
 
   if (find_simbolo(tabla, identificador) != NULL ) return -1;
@@ -43,11 +43,9 @@ int add_simbolo(simboloTabla ** tabla, char * identificador, int valor) {
     return -1;
   }
   strcpy(elemento->identificador, identificador);
-  elemento->valor = valor;
+  elemento->valor = simbolo;
 
   HASH_ADD_STR(*tabla, identificador, elemento);
-
-
 
   return 0;
 }
@@ -63,6 +61,7 @@ void delete_all(simboloTabla ** tabla) {
   HASH_ITER(hh, *tabla, elemento, tmp) {
     HASH_DEL( *tabla,elemento);
     free(elemento->identificador);
+    free(elemento->valor->identificador);
     free(elemento);
   }
 }
@@ -113,15 +112,15 @@ simboloTabla * buscarAmbitoLocal(tablaSimbolos * tabla, char * identificador){
   return s;
 }
 
-int insertarAmbitoGlobal(tablaSimbolos * tabla, char * identificador, int valor){
+int insertarAmbitoGlobal(tablaSimbolos * tabla, char * identificador, SIMBOLO * valor){
   return add_simbolo(tabla->global, identificador, valor);
 }
 
-int insertarAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor){
+int insertarAmbitoLocal(tablaSimbolos * tabla, char * identificador, SIMBOLO * valor){
   return add_simbolo(tabla->local, identificador, valor);
 }
 
-int aperturaAmbitoLocal(tablaSimbolos * tabla, char * identificador, int valor){
+int aperturaAmbitoLocal(tablaSimbolos * tabla, char * identificador, SIMBOLO * valor){
   if(insertarAmbitoGlobal(tabla,identificador, valor) == -1) return -1;
   if(insertarAmbitoLocal(tabla, identificador, valor) == -1){
     delete_simbolo(tabla->global, find_simbolo(tabla->global, identificador));
