@@ -1,7 +1,9 @@
 
 #include <stdio.h>
 #include "tokens.h"
-
+#include "alfa.h"
+#include "generacion.h"
+#include "tablasimbolos.h"
 int yylex();
 int yyparse();
 
@@ -20,6 +22,7 @@ int main(int argc, char const *argv[]) {
   extern int yyleng;
   extern long nline, ncolumn;
   extern int is_morpho;
+  int err;
 
 
   if (argc < 3){
@@ -40,7 +43,10 @@ int main(int argc, char const *argv[]) {
     return 1;
   }
 
-  if(yyparse()!=0) {
+  if((err=yyparse())!=0) {
+    if (err == -1){
+      printf("Error\n");
+    }
     if(is_morpho){
       fprintf(stderr, "****Error en [lin %li, col %li]: ", nline, ncolumn);
       if (yyleng > 100){
