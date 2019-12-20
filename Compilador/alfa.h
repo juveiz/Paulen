@@ -4,17 +4,7 @@
 #define MAX_TAMANIO_VECTOR 64
 #define GLOBAL 0
 #define LOCAL 1
-
-/* otros defines */
-typedef struct
-{
- char lexema[MAX_LONG_ID+1];
- int tipo;
- int valor_entero;
- int es_direccion;
- int etiqueta;
-} tipo_atributos;
-
+#define MAX_INT 50
 /* Categoría de un símbolo: variable, parámetro de función o función */
 typedef enum { VARIABLE, PARAMETRO, FUNCION } CATEGORIA_SIMBOLO;
 
@@ -36,4 +26,15 @@ typedef struct {
     int posicion;                       /* posición en llamada a función si parámetro, posición de declaración si variable local de función */
     int num_var_locales;                /* número de variables locales si función */
 } SIMBOLO;
+
+/* otros defines */
+typedef struct
+{
+ char lexema[MAX_LONG_ID+1];
+ TIPO tipo;
+ int valor_entero;
+ int es_direccion;
+ int etiqueta;
+} tipo_atributos;
+
 #endif

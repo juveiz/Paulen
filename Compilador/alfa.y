@@ -67,12 +67,20 @@
 %left TOK_ASTERISCO TOK_DIVISION TOK_AND
 %right TOK_NOT
 
-%type <atributos> exp
+%type <atributos> condicional
 %type <atributos> comparacion
+%type <atributos> elemento_vector
+%type <atributos> exp
+%type <atributos> constante
+%type <atributos> constante_entera
+%type <atributos> constante_logica
+%type <atributos> identificador
 
 %%
-programa: TOK_MAIN inicioTabla TOK_LLAVEIZQUIERDA declaraciones escritura_TS funciones escritura_main sentencias TOK_LLAVEDERECHA escribir_fin
-{fprintf(out, ";R1:\t<programa> ::= main { <declaraciones> <funciones> <sentencias> }\n");};
+programa: TOK_MAIN inicioTabla TOK_LLAVEIZQUIERDA declaraciones escritura_TS funciones escritura_main sentencias TOK_LLAVEDERECHA
+{fprintf(out, ";R1:\t<programa> ::= main { <declaraciones> <funciones> <sentencias> }\n");
+  escribir_fin(out);
+  deleteTablaSimbolos(tabla);};
 
 inicioTabla: {
   tabla = createTablaSimbolos();
@@ -94,10 +102,6 @@ escritura_main: {
   escribir_inicio_main(out);
 }
 
-escribir_fin:{
-  escribir_fin(out);
-  deleteTablaSimbolos(tabla);
-}
 declaraciones:  declaracion {fprintf(out,";R2:\t<declaraciones> ::= <declaracion>\n");}
               | declaracion declaraciones {fprintf(out,";R3:\t<declaraciones> ::= <declaracion> <declaraciones>\n");};
 
@@ -154,7 +158,31 @@ sentencia_simple:  asignacion {fprintf(out,";R34:\t<sentencia_simple> ::= <asign
 bloque:  condicional {fprintf(out,";R40:\t<bloque> ::= <condicional>\n");}
        | bucle {fprintf(out,";R41:\t<bloque> ::= <condicional>\n");};
 
-asignacion: identificador TOK_ASIGNACION exp {fprintf(out,";R43:\t<asignacion> ::= <identificador> = <exp>\n");}
+asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
+            {fprintf(out,";R43:\t<asignacion> ::= <identificador> = <exp>\n");
+              if (ambito == GLOBAL){
+                if(buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
+                  printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+                if($1.cat_simbolo == FUNCION){
+                  printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+                if($1.categoria == VECTOR){
+                  printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+                if($1.tipo != $3.tipo){
+                  printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+                asignar(out,$1.lexema,$3.es_variable);
+                }}
            | elemento_vector TOK_ASIGNACION exp {fprintf(out,";R44:\t<asignacion> ::= <elemento_vector> = <exp>\n");};
 
 elemento_vector: identificador TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO {fprintf(out,";R48:\t<elemento_vector> ::= <identificador> [ <exp> ]\n");};
@@ -180,8 +208,11 @@ exp:  exp TOK_MAS exp {fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");}
     | exp TOK_AND exp {fprintf(out,";R77:\t<exp> ::= <exp> && <exp>\n");}
     | exp TOK_OR exp {fprintf(out,";R:78\t<exp> ::= <exp> || <exp>\n");}
     | TOK_NOT exp {fprintf(out,";R79:\t<exp> ::= ! <exp>\n");}
-    | identificador {fprintf(out,";R80:\t<exp> ::= <identificador>\n");}
-    | constante {fprintf(out,";R81:\t<exp> ::= <constante>\n");}
+    | TOK_IDENTIFICADOR {fprintf(out,";R80:\t<exp> ::= <identificador>\n");}
+    | constante
+      {fprintf(out,";R81:\t<exp> ::= <constante>\n");
+      $$.tipo = $1.tipo;
+      $$.es_direccion = $1.es_direccion;}
     | TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO {fprintf(out,";R82:\t<exp> ::= ( <exp> )\n");}
     | TOK_PARENTESISIZQUIERDO comparacion TOK_PARENTESISDERECHO {fprintf(out,";R83:\t<exp> ::= ( <comparacion> )\n");}
     | elemento_vector {fprintf(out,";R85:\t<exp> ::= <elemento_vector>\n");}
@@ -200,13 +231,24 @@ comparacion:  exp TOK_IGUAL exp {fprintf(out,";R93:\t<comparacion> ::= <exp> == 
             | exp TOK_MENOR exp {fprintf(out,";R97:\t<comparacion> ::= <exp> < <exp>\n");}
             | exp TOK_MAYOR exp {fprintf(out,";R98:\t<comparacion> ::= <exp> > <exp>\n");};
 
-constante:  constante_logica {fprintf(out,";R99:\t<constante> ::= <constante_logica>\n");}
+constante:  constante_logica
+            {fprintf(out,";R99:\t<constante> ::= <constante_logica>\n");
+            $$.tipo = $1.tipo;
+            $$.es_direccion = $1.es_direccion;}
          | constante_entera {fprintf(out,";R100:\t<constante> ::= <constante_entera>\n");};
 
 constante_logica:  TOK_TRUE {fprintf(out,";R102:\t<constante_logica> ::= true\n");}
                  | TOK_FALSE {fprintf(out,";R103:\t<constante_logica> ::= false\n");};
 
-constante_entera: TOK_CONSTANTE_ENTERA {fprintf(out,";R104:\t<constante_entera> ::= TOK_CONSTANTE_ENTERA\n");};
+constante_entera: TOK_CONSTANTE_ENTERA
+  {fprintf(out,";R104:\t<constante_entera> ::= TOK_CONSTANTE_ENTERA\n");
+    $$.tipo = ENTERO;
+    $$.es_direccion = 0;
+    $$.valor_entero = $1.valor_entero;
+    char valor[MAX_INT];
+    sprintf(valor,"%d",$$.valor_entero);
+    escribir_operando(out,valor,0);
+    };
 
 identificador: TOK_IDENTIFICADOR
     {fprintf(out,";R108:\t<identificador> ::= TOK_IDENTIFICADOR\n");
