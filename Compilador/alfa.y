@@ -17,6 +17,7 @@
   int longitud;
   int num_parametros;
   int posicion = 1;
+  int etiqueta = 1;
 %}
 %union
 {
@@ -200,17 +201,65 @@ condicional:  TOK_IF TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVE
 bucle: TOK_WHILE TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA sentencias TOK_LLAVEDERECHA
 {fprintf(out,";R52:\t<bucle> ::= while ( <exp> ) { <sentencias> }\n");};
 
-lectura: TOK_SCANF identificador {fprintf(out,";R54:\t<lectura> ::= scanf <identificador>\n");};
+lectura: TOK_SCANF identificador
+{
+  fprintf(out,";R54:\t<lectura> ::= scanf <identificador>\n");
+  simboloTabla * simbolo;
+  if(ambito == GLOBAL) simbolo = buscarAmbitoGlobal(tabla, $2.lexema);
+  else simbolo = buscarAmbitoLocal(tabla, $2.lexema);
+
+  if(simbolo == NULL) {
+    printf("****Error en la tabla de simbolos. El identificador no existe\n");
+    deleteTablaSimbolos(tabla);
+    return -1;
+  }
+
+  if($2.cat_simbolo == FUNCION || $2.categoria == VECTOR){
+    printf("****Error en lectura. Categoria o clase incorrecta del identificador\n");
+    deleteTablaSimbolos(tabla);
+    return -1;
+  }
+
+  /* TODO
+    Si el identificador en una variable global , su dirección es su lexema
+    Si el identificador es un parámetro o una variable local, su dirección se expresa en función de ebp y la
+    posición del parámetro o variable local
+  */
+  if(ambito == GLOBAL){
+
+  }
+  else if(buscarAmbitoLocal(tabla, $2.lexema) != NULL){
+
+  }
+  else if(buscarAmbitoGlobal(tabla, $2.lexema) != NULL){
+
+  }
+  leer(out, $2.lexema, $2.tipo);
+  };
 
 escritura: TOK_PRINTF exp
             {fprintf(out,";R56:\t<escritura> ::= printf <exp>\n");
-            operandoEnPilaAArgumento(out,2.es_variable);
+            operandoEnPilaAArgumento(out,$2.es_variable);
             escribir(out,$2.es_variable,$2.tipo);
               };
 
 retorno_funcion: TOK_RETURN exp {fprintf(out,";R61:\t<retorno_funcion> ::= return <exp>\n");};
 
-exp:  exp TOK_MAS exp {fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");}
+exp:  exp TOK_MAS exp
+      {
+        fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");
+        if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+          printf("****Error en expresion aritmetica. No se pueden sumar booleanos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
+          sumar(out, $1.es_direccion, $3.es_direccion);
+          $$.tipo = ENTERO;
+          $$.es_direccion = 0;
+
+        }
+    }
     | exp TOK_MENOS exp {fprintf(out,";R73:\t<exp> ::= <exp> - <exp>\n");}
     | exp TOK_DIVISION exp {fprintf(out,";R74:\t<exp> ::= <exp> / <exp>\n");}
     | exp TOK_ASTERISCO exp {fprintf(out,";R75:\t<exp> ::= <exp> * <exp>\n");}
@@ -260,7 +309,12 @@ exp:  exp TOK_MAS exp {fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");}
       $$.tipo = $1.tipo;
       $$.es_direccion = $1.es_direccion;}
     | TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO {fprintf(out,";R82:\t<exp> ::= ( <exp> )\n");}
-    | TOK_PARENTESISIZQUIERDO comparacion TOK_PARENTESISDERECHO {fprintf(out,";R83:\t<exp> ::= ( <comparacion> )\n");}
+    | TOK_PARENTESISIZQUIERDO comparacion TOK_PARENTESISDERECHO
+    {
+      fprintf(out,";R83:\t<exp> ::= ( <comparacion> )\n");
+      $$.tipo = $2.tipo;
+      $$.es_direccion = $2.es_direccion;
+    }
     | elemento_vector {fprintf(out,";R85:\t<exp> ::= <elemento_vector>\n");}
     | identificador TOK_PARENTESISIZQUIERDO lista_expresiones TOK_PARENTESISDERECHO {fprintf(out,";R88:\t<exp> ::= <identificador> ( <lista_expresiones> )\n");};
 
@@ -270,12 +324,102 @@ exp:  exp TOK_MAS exp {fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");}
   resto_lista_expresiones: TOK_COMA exp resto_lista_expresiones {fprintf(out,";R91:\t<resto_lista_expresiones> ::= , <exp> <resto_lista_expresiones>\n");}
                           |/*vacio*/{fprintf(out,";R92:\t<resto_lista_expresiones> ::= \n");};
 
-comparacion:  exp TOK_IGUAL exp {fprintf(out,";R93:\t<comparacion> ::= <exp> == <exp>\n");}
-            | exp TOK_DISTINTO exp {fprintf(out,";R94:\t<comparacion> ::= <exp> != <exp>\n");}
-            | exp TOK_MENORIGUAL exp {fprintf(out,";R95:\t<comparacion> ::= <exp> <= <exp>\n");}
-            | exp TOK_MAYORIGUAL exp {fprintf(out,";R96:\t<comparacion> ::= <exp> >= <exp>\n");}
-            | exp TOK_MENOR exp {fprintf(out,";R97:\t<comparacion> ::= <exp> < <exp>\n");}
-            | exp TOK_MAYOR exp {fprintf(out,";R98:\t<comparacion> ::= <exp> > <exp>\n");};
+comparacion:  exp TOK_IGUAL exp
+              {
+                fprintf(out,";R93:\t<comparacion> ::= <exp> == <exp>\n");
+                if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+
+                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
+                  igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                  etiqueta ++;
+                  $$.tipo = BOOLEANO;
+                  $$.es_direccion = 0;
+                }
+            }
+            | exp TOK_DISTINTO exp
+              {
+                fprintf(out,";R94:\t<comparacion> ::= <exp> != <exp>\n");
+                if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+
+                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
+                  distinto(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                  etiqueta ++;
+                  $$.tipo = BOOLEANO;
+                  $$.es_direccion = 0;
+                }
+            }
+            | exp TOK_MENORIGUAL exp
+              {
+                fprintf(out,";R95:\t<comparacion> ::= <exp> <= <exp>\n");
+                if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+
+                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
+                  menor_igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                  etiqueta ++;
+                  $$.tipo = BOOLEANO;
+                  $$.es_direccion = 0;
+                }
+            }
+            | exp TOK_MAYORIGUAL exp
+              {
+                fprintf(out,";R96:\t<comparacion> ::= <exp> >= <exp>\n");
+                if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+
+                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
+                  mayor_igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                  etiqueta ++;
+                  $$.tipo = BOOLEANO;
+                  $$.es_direccion = 0;
+                }
+            }
+            | exp TOK_MENOR exp
+              {
+                fprintf(out,";R97:\t<comparacion> ::= <exp> < <exp>\n");
+                if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+
+                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
+                  menor(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                  etiqueta ++;
+                  $$.tipo = BOOLEANO;
+                  $$.es_direccion = 0;
+                }
+            }
+            | exp TOK_MAYOR exp
+              {
+                fprintf(out,";R98:\t<comparacion> ::= <exp> > <exp>\n");
+                if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  deleteTablaSimbolos(tabla);
+                  return -1;
+                }
+
+                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
+                  mayor(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                  etiqueta ++;
+                  $$.tipo = BOOLEANO;
+                  $$.es_direccion = 0;
+                }
+            };
 
 constante:  constante_logica
             {fprintf(out,";R99:\t<constante> ::= <constante_logica>\n");
