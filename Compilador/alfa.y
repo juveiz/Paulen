@@ -17,7 +17,6 @@
   int longitud;
   int num_parametros;
   int posicion = 1;
-
 %}
 %union
 {
@@ -166,23 +165,30 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
-                if($1.cat_simbolo == FUNCION){
-                  printf("****Error en lin %li: Asignacion incompatible\n",nline);
+              }else{
+                if(buscarAmbitoLocal(tabla,$1.lexema) == NULL){
+                  printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
-                if($1.categoria == VECTOR){
-                  printf("****Error en lin %li: Asignacion incompatible\n",nline);
-                  deleteTablaSimbolos(tabla);
-                  return -1;
-                }
-                if($1.tipo != $3.tipo){
-                  printf("****Error en lin %li: Asignacion incompatible\n",nline);
-                  deleteTablaSimbolos(tabla);
-                  return -1;
-                }
-                asignar(out,$1.lexema,$3.es_variable);
-                }}
+              }
+              if($1.cat_simbolo == FUNCION){
+                printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                deleteTablaSimbolos(tabla);
+                return -1;
+              }
+              if($1.categoria == VECTOR){
+                printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                deleteTablaSimbolos(tabla);
+                return -1;
+              }
+              if($1.tipo != $3.tipo){
+                printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                deleteTablaSimbolos(tabla);
+                return -1;
+              }
+              asignar(out,$1.lexema,$3.es_variable);
+            }
            | elemento_vector TOK_ASIGNACION exp {fprintf(out,";R44:\t<asignacion> ::= <elemento_vector> = <exp>\n");};
 
 elemento_vector: identificador TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO {fprintf(out,";R48:\t<elemento_vector> ::= <identificador> [ <exp> ]\n");};
@@ -196,7 +202,11 @@ bucle: TOK_WHILE TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVEIZQU
 
 lectura: TOK_SCANF identificador {fprintf(out,";R54:\t<lectura> ::= scanf <identificador>\n");};
 
-escritura: TOK_PRINTF exp {fprintf(out,";R56:\t<escritura> ::= printf <exp>\n");};
+escritura: TOK_PRINTF exp
+            {fprintf(out,";R56:\t<escritura> ::= printf <exp>\n");
+            operandoEnPilaAArgumento(out,2.es_variable);
+            escribir(out,$2.es_variable,$2.tipo);
+              };
 
 retorno_funcion: TOK_RETURN exp {fprintf(out,";R61:\t<retorno_funcion> ::= return <exp>\n");};
 
@@ -208,7 +218,43 @@ exp:  exp TOK_MAS exp {fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");}
     | exp TOK_AND exp {fprintf(out,";R77:\t<exp> ::= <exp> && <exp>\n");}
     | exp TOK_OR exp {fprintf(out,";R:78\t<exp> ::= <exp> || <exp>\n");}
     | TOK_NOT exp {fprintf(out,";R79:\t<exp> ::= ! <exp>\n");}
-    | TOK_IDENTIFICADOR {fprintf(out,";R80:\t<exp> ::= <identificador>\n");}
+    | TOK_IDENTIFICADOR
+      {fprintf(out,";R80:\t<exp> ::= <identificador>\n");
+      simboloTabla *simbolo;
+      SIMBOLO *sim_aux;
+      if (ambito == GLOBAL){
+        if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
+          printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+      }else{
+        if((simbolo = buscarAmbitoLocal(tabla,$1.lexema)) == NULL){
+          printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+      }
+      if($1.cat_simbolo == FUNCION){
+        printf("****Error en lin %li: Asignacion incompatible\n",nline);
+        deleteTablaSimbolos(tabla);
+        return -1;
+      }
+      if($1.categoria == VECTOR){
+        printf("****Error en lin %li: Asignacion incompatible\n",nline);
+        deleteTablaSimbolos(tabla);
+        return -1;
+      }
+      sim_aux = getValor(simbolo);
+      if(sim_aux == NULL){
+        printf("****Error en la tabla de simbolos\n");
+        deleteTablaSimbolos(tabla);
+        return -1;
+      }
+      $$.tipo = sim_aux->tipo;
+      $$.es_direccion = 1;
+      escribir_operando(out,$1.lexema,1);
+    }
     | constante
       {fprintf(out,";R81:\t<exp> ::= <constante>\n");
       $$.tipo = $1.tipo;
