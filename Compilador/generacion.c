@@ -327,7 +327,7 @@ void ifthenelse_inicio(FILE* fpasm, int exp_es_variable, int etiqueta){
         /*Comparamos eax y ebx*/
         fprintf(fpasm, "\tcmp eax,0\n");
         /* Si no se cumple la condicion saltamos */
-        fprintf(fpasm, "\tje ifthenelse_%d\n",etiqueta);
+        fprintf(fpasm, "\tje if_fin_%d\n",etiqueta);
 }
 
 void ifthen_inicio(FILE* fpasm, int exp_es_variable, int etiqueta){
@@ -336,20 +336,20 @@ void ifthen_inicio(FILE* fpasm, int exp_es_variable, int etiqueta){
         /*Comparamos eax y ebx*/
         fprintf(fpasm, "\tcmp eax,0\n");
         /* Si no se cumple la condicion saltamos */
-        fprintf(fpasm, "\tje ifthen_fin_%d\n",etiqueta);
+        fprintf(fpasm, "\tje if_fin_%d\n",etiqueta);
 }
 
 void ifthen_fin(FILE* fpasm, int etiqueta){
-        fprintf(fpasm, "ifthen_fin_%d:\n",etiqueta);
+        fprintf(fpasm, "if_fin_%d:\n",etiqueta);
 }
 
 void ifthenelse_fin_then(FILE* fpasm, int etiqueta){
-        fprintf(fpasm, "\tjmp ifthenelse_fin_%d\n",etiqueta);
-        fprintf(fpasm, "ifthenelse_%d:\n",etiqueta);
+        fprintf(fpasm, "\tjmp else_fin_%d\n",etiqueta);
+        fprintf(fpasm, "if_fin_%d:\n",etiqueta);
 }
 
 void ifthenelse_fin(FILE* fpasm, int etiqueta){
-        fprintf(fpasm, "ifthenelse_fin_%d:\n",etiqueta);
+        fprintf(fpasm, "else_fin_%d:\n",etiqueta);
 }
 
 void while_inicio(FILE* fpasm, int etiqueta){

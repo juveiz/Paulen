@@ -20,6 +20,13 @@ SIMBOLO * getValor(simboloTabla * simbolo){
   return simbolo->valor;
 }
 
+CATEGORIA_SIMBOLO getCategoriaSimbolo(simboloTabla * simbolo){
+  return simbolo->valor->cat_simbolo;
+}
+CATEGORIA getCategoria(simboloTabla * simbolo){
+  return simbolo->valor->categoria;
+}
+
 simboloTabla *find_simbolo(simboloTabla ** tabla, char * identificador) {
     simboloTabla *s;
     if (*tabla == NULL){

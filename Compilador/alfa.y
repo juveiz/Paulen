@@ -17,7 +17,7 @@
   int longitud = 1;
   int num_parametros;
   int posicion = 1;
-  int etiqueta = 1;
+  int etiqueta = 0;
 %}
 %union
 {
@@ -75,6 +75,10 @@
 %type <atributos> constante_entera
 %type <atributos> constante_logica
 %type <atributos> identificador
+%type <atributos> if_exp
+%type <atributos> if_exp_sentencias
+%type <atributos> while
+%type <atributos> while_exp
 
 %%
 programa: TOK_MAIN inicioTabla TOK_LLAVEIZQUIERDA declaraciones escritura_TS funciones escritura_main sentencias TOK_LLAVEDERECHA
@@ -201,14 +205,62 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
 
 elemento_vector: identificador TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO {fprintf(out,";R48:\t<elemento_vector> ::= <identificador> [ <exp> ]\n");};
 
-condicional:  TOK_IF TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA sentencias TOK_LLAVEDERECHA {fprintf(out,";R50:\t<condicional> ::= if ( <exp> ) { <sentencias> }\n");}
-            | TOK_IF TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA sentencias TOK_LLAVEDERECHA TOK_ELSE TOK_LLAVEIZQUIERDA sentencias TOK_LLAVEDERECHA
-            {fprintf(out,";R51:\t<condicional> ::= if ( <exp> ) { <sentencias> } else { <sentencias> }\n");};
+condicional:  if_exp sentencias TOK_LLAVEDERECHA
+              {
+                fprintf(out,";R50:\t<condicional> ::= if ( <exp> ) { <sentencias> }\n");
+                ifthen_fin(out, $$.etiqueta);
+            }
+            | if_exp_sentencias TOK_ELSE TOK_LLAVEIZQUIERDA sentencias TOK_LLAVEDERECHA
+              {
+                fprintf(out,";R51:\t<condicional> ::= if ( <exp> ) { <sentencias> } else { <sentencias> }\n");
+                ifthenelse_fin(out, $1.etiqueta);
+            };
 
-bucle: TOK_WHILE TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA sentencias TOK_LLAVEDERECHA
-{fprintf(out,";R52:\t<bucle> ::= while ( <exp> ) { <sentencias> }\n");};
+if_exp_sentencias: if_exp sentencias TOK_LLAVEDERECHA
+                   {
+                     $$.etiqueta = $1.etiqueta;
+                     ifthenelse_fin_then(out, $$.etiqueta);
+                   }
 
-lectura: TOK_SCANF identificador
+if_exp: TOK_IF TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA
+        {
+          if($3.tipo != BOOLEANO) {
+            printf("****Error en lin %li: Tipo incorrecto \n",nline);
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+
+          $$.etiqueta = etiqueta++;
+
+          ifthen_inicio(out,$3.es_direccion, $$.etiqueta);
+        }
+
+bucle: while_exp sentencias TOK_LLAVEDERECHA
+      {
+        fprintf(out,";R52:\t<bucle> ::= while ( <exp> ) { <sentencias> }\n");
+        while_fin(out, $1.etiqueta);
+      };
+
+while_exp: while exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA
+           {
+             if($2.tipo != BOOLEANO) {
+               printf("****Error en lin %li: Tipo incorrecto \n",nline);
+               deleteTablaSimbolos(tabla);
+               return -1;
+             }
+
+             $$.etiqueta = $1.etiqueta;
+
+             while_exp_pila(out, $2.es_direccion, $$.etiqueta);
+           }
+
+while: TOK_WHILE TOK_PARENTESISIZQUIERDO
+       {
+         $$.etiqueta = etiqueta++;
+         while_inicio(out, $$.etiqueta);
+       }
+
+lectura: TOK_SCANF TOK_IDENTIFICADOR
 {
   fprintf(out,";R54:\t<lectura> ::= scanf <identificador>\n");
   simboloTabla * simbolo;
@@ -216,13 +268,13 @@ lectura: TOK_SCANF identificador
   else simbolo = buscarAmbitoLocal(tabla, $2.lexema);
 
   if(simbolo == NULL) {
-    printf("****Error en la tabla de simbolos. El identificador no existe\n");
+    printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$2.lexema);
     deleteTablaSimbolos(tabla);
     return -1;
   }
 
-  if($2.cat_simbolo == FUNCION || $2.categoria == VECTOR){
-    printf("****Error en lectura. Categoria o clase incorrecta del identificador\n");
+  if(getCategoriaSimbolo(simbolo) == FUNCION || getCategoria(simbolo) == VECTOR){
+    printf("****Error en lin %li: Categoria o clase incorrecta de (%s)\n",nline,$2.lexema);
     deleteTablaSimbolos(tabla);
     return -1;
   }
@@ -247,7 +299,7 @@ lectura: TOK_SCANF identificador
 escritura: TOK_PRINTF exp
             {fprintf(out,";R56:\t<escritura> ::= printf <exp>\n");
             operandoEnPilaAArgumento(out,$2.es_direccion);
-            escribir(out,$2.es_variable,$2.tipo);
+            escribir(out,$2.es_direccion,$2.tipo);
               };
 
 retorno_funcion: TOK_RETURN exp {fprintf(out,";R61:\t<retorno_funcion> ::= return <exp>\n");};
@@ -256,24 +308,99 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error en expresion aritmetica. No se pueden sumar booleanos\n");
+          printf("****Error en lin %li: No se pueden sumar booleanos\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
-        if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
-          sumar(out, $1.es_direccion, $3.es_direccion);
-          $$.tipo = ENTERO;
-          $$.es_direccion = 0;
-
-        }
+        sumar(out, $1.es_direccion, $3.es_direccion);
+        $$.tipo = ENTERO;
+        $$.es_direccion = 0;
     }
-    | exp TOK_MENOS exp {fprintf(out,";R73:\t<exp> ::= <exp> - <exp>\n");}
-    | exp TOK_DIVISION exp {fprintf(out,";R74:\t<exp> ::= <exp> / <exp>\n");}
-    | exp TOK_ASTERISCO exp {fprintf(out,";R75:\t<exp> ::= <exp> * <exp>\n");}
-    | TOK_MENOS exp {fprintf(out,";R76:\t<exp> ::= - <exp>\n");}
-    | exp TOK_AND exp {fprintf(out,";R77:\t<exp> ::= <exp> && <exp>\n");}
-    | exp TOK_OR exp {fprintf(out,";R:78\t<exp> ::= <exp> || <exp>\n");}
-    | TOK_NOT exp {fprintf(out,";R79:\t<exp> ::= ! <exp>\n");}
+    | exp TOK_MENOS exp
+      {
+        fprintf(out,";R73:\t<exp> ::= <exp> - <exp>\n");
+        if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+          printf("****Error en lin %li: No se pueden restar booleanos\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        restar(out, $1.es_direccion, $3.es_direccion);
+        $$.tipo = ENTERO;
+        $$.es_direccion = 0;
+    }
+    | exp TOK_DIVISION exp
+      {
+        fprintf(out,";R74:\t<exp> ::= <exp> / <exp>\n");
+        if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+          printf("****Error en lin %li: No se pueden dividir booleanos\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        dividir(out, $1.es_direccion, $3.es_direccion);
+        $$.tipo = ENTERO;
+        $$.es_direccion = 0;
+    }
+    | exp TOK_ASTERISCO exp
+      {
+        fprintf(out,";R75:\t<exp> ::= <exp> * <exp>\n");
+        if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
+          printf("****Error en lin %li: No se pueden multiplicar booleanos\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        multiplicar(out, $1.es_direccion, $3.es_direccion);
+        $$.tipo = ENTERO;
+        $$.es_direccion = 0;
+    }
+    | TOK_MENOS exp
+      {
+        fprintf(out,";R76:\t<exp> ::= - <exp>\n");
+        if($2.tipo == BOOLEANO) {
+          printf("****Error en lin %li: Tipo incorrecto\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        cambiar_signo(out, $2.es_direccion);
+        $$.tipo = ENTERO;
+        $$.es_direccion = 0;
+    }
+    | exp TOK_AND exp
+      {
+        fprintf(out,";R77:\t<exp> ::= <exp> && <exp>\n");
+        if(($1.tipo == ENTERO) || ($3.tipo == ENTERO)) {
+          printf("****Error en lin %li: Tipo incorrecto\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        y(out, $1.es_direccion, $3.es_direccion);
+        $$.tipo = BOOLEANO;
+        $$.es_direccion = 0;
+    }
+    | exp TOK_OR exp
+      {
+        fprintf(out,";R:78\t<exp> ::= <exp> || <exp>\n");
+        if(($1.tipo == ENTERO) || ($3.tipo == ENTERO)) {
+          printf("****Error en lin %li: Tipo incorrecto\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        o(out, $1.es_direccion, $3.es_direccion);
+        $$.tipo = BOOLEANO;
+        $$.es_direccion = 0;
+    }
+    | TOK_NOT exp
+      {
+        fprintf(out,";R79:\t<exp> ::= ! <exp>\n");
+        if($2.tipo == ENTERO) {
+          printf("****Error en lin %li: Tipo incorrecto\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        no(out, $2.es_direccion, etiqueta);
+        etiqueta++;
+        $$.tipo = BOOLEANO;
+        $$.es_direccion = 0;
+    }
     | TOK_IDENTIFICADOR
       {fprintf(out,";R80:\t<exp> ::= <identificador>\n");
       simboloTabla *simbolo;
@@ -335,97 +462,79 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R93:\t<comparacion> ::= <exp> == <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
-
-                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
-                  igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
-                  etiqueta ++;
-                  $$.tipo = BOOLEANO;
-                  $$.es_direccion = 0;
-                }
+                igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                etiqueta ++;
+                $$.tipo = BOOLEANO;
+                $$.es_direccion = 0;
             }
             | exp TOK_DISTINTO exp
               {
                 fprintf(out,";R94:\t<comparacion> ::= <exp> != <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
-
-                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
-                  distinto(out, $1.es_direccion , $3.es_direccion ,etiqueta);
-                  etiqueta ++;
-                  $$.tipo = BOOLEANO;
-                  $$.es_direccion = 0;
-                }
+                distinto(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                etiqueta ++;
+                $$.tipo = BOOLEANO;
+                $$.es_direccion = 0;
             }
             | exp TOK_MENORIGUAL exp
               {
                 fprintf(out,";R95:\t<comparacion> ::= <exp> <= <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
-
-                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
-                  menor_igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
-                  etiqueta ++;
-                  $$.tipo = BOOLEANO;
-                  $$.es_direccion = 0;
-                }
+                menor_igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                etiqueta ++;
+                $$.tipo = BOOLEANO;
+                $$.es_direccion = 0;
             }
             | exp TOK_MAYORIGUAL exp
               {
                 fprintf(out,";R96:\t<comparacion> ::= <exp> >= <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
-
-                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
-                  mayor_igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
-                  etiqueta ++;
-                  $$.tipo = BOOLEANO;
-                  $$.es_direccion = 0;
-                }
+                mayor_igual(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                etiqueta ++;
+                $$.tipo = BOOLEANO;
+                $$.es_direccion = 0;
             }
             | exp TOK_MENOR exp
               {
                 fprintf(out,";R97:\t<comparacion> ::= <exp> < <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
-
-                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
-                  menor(out, $1.es_direccion , $3.es_direccion ,etiqueta);
-                  etiqueta ++;
-                  $$.tipo = BOOLEANO;
-                  $$.es_direccion = 0;
-                }
+                menor(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                etiqueta ++;
+                $$.tipo = BOOLEANO;
+                $$.es_direccion = 0;
             }
             | exp TOK_MAYOR exp
               {
                 fprintf(out,";R98:\t<comparacion> ::= <exp> > <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en expresion aritmetica. No se pueden comparar booleanos\n");
+                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
-
-                if(($1.tipo == ENTERO) && ($3.tipo == ENTERO)){
-                  mayor(out, $1.es_direccion , $3.es_direccion ,etiqueta);
-                  etiqueta ++;
-                  $$.tipo = BOOLEANO;
-                  $$.es_direccion = 0;
-                }
+                mayor(out, $1.es_direccion , $3.es_direccion ,etiqueta);
+                etiqueta ++;
+                $$.tipo = BOOLEANO;
+                $$.es_direccion = 0;
             };
 
 constante:  constante_logica
@@ -447,69 +556,69 @@ constante_entera: TOK_CONSTANTE_ENTERA
     escribir_operando(out,valor,0);
     };
 
-    identificador: TOK_IDENTIFICADOR
-        {fprintf(out,";R108:\t<identificador> ::= TOK_IDENTIFICADOR\n");
-        if (ambito == GLOBAL){
-          if (buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
-            SIMBOLO sim;
-            sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
-            if (sim.identificador == NULL){
-              printf("****Error en la tabla de simbolos\n");
-              deleteTablaSimbolos(tabla);
-              return -1;
-            }
-            strcpy(sim.identificador,$1.lexema);
-            sim.cat_simbolo = cat_simbolo;
-            sim.tipo = tipo;
-            sim.categoria = categoria;
-            sim.valor = valor;
-            sim.longitud = longitud;
-            sim.num_parametros = num_parametros;
-            sim.posicion = posicion;
-            if (insertarAmbitoGlobal(tabla, $1.lexema,&sim) == -1){
-              printf("****Error en la tabla de simbolos\n");
-              deleteTablaSimbolos(tabla);
-              return -1;
-            }
-            declarar_variable(out,$1.lexema,sim.tipo,sim.longitud);
-          }else{
-            printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
-            deleteTablaSimbolos(tabla);
-            return -1;
-          }
-        }else{
-          if (buscarAmbitoLocal(tabla,$1.lexema) == NULL){
-            if (categoria != ESCALAR){
-              printf("****Error en la tabla de simbolos\n");
-              deleteTablaSimbolos(tabla);
-              return -1;
-            }
-            SIMBOLO sim;
-            posicion ++;
-            sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
-            if (sim.identificador == NULL){
-              printf("****Error en la tabla de simbolos\n");
-              deleteTablaSimbolos(tabla);
-              return -1;
-            }
-            strcpy(sim.identificador,$1.lexema);
-            sim.cat_simbolo = cat_simbolo;
-            sim.tipo = tipo;
-            sim.categoria = categoria;
-            sim.valor = valor;
-            sim.longitud = longitud;
-            // Revisar las dos siguientes
-            sim.num_parametros = num_parametros;
-            sim.posicion = posicion;
-            if (insertarAmbitoLocal(tabla, $1.lexema,&sim) == -1){
-              printf("****Error en la tabla de simbolos\n");
-              deleteTablaSimbolos(tabla);
-              return -1;
-            }
-          }else{
-            printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
-            deleteTablaSimbolos(tabla);
-            return -1;
-          }
+identificador: TOK_IDENTIFICADOR
+    {fprintf(out,";R108:\t<identificador> ::= TOK_IDENTIFICADOR\n");
+    if (ambito == GLOBAL){
+      if (buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
+        SIMBOLO sim;
+        sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+        if (sim.identificador == NULL){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
         }
-        };
+        strcpy(sim.identificador,$1.lexema);
+        sim.cat_simbolo = cat_simbolo;
+        sim.tipo = tipo;
+        sim.categoria = categoria;
+        sim.valor = valor;
+        sim.longitud = longitud;
+        sim.num_parametros = num_parametros;
+        sim.posicion = posicion;
+        if (insertarAmbitoGlobal(tabla, $1.lexema,&sim) == -1){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        declarar_variable(out,$1.lexema,sim.tipo,sim.longitud);
+      }else{
+        printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+        deleteTablaSimbolos(tabla);
+        return -1;
+      }
+    }else{
+      if (buscarAmbitoLocal(tabla,$1.lexema) == NULL){
+        if (categoria != ESCALAR){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        SIMBOLO sim;
+        posicion ++;
+        sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+        if (sim.identificador == NULL){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        strcpy(sim.identificador,$1.lexema);
+        sim.cat_simbolo = cat_simbolo;
+        sim.tipo = tipo;
+        sim.categoria = categoria;
+        sim.valor = valor;
+        sim.longitud = longitud;
+        // Revisar las dos siguientes
+        sim.num_parametros = num_parametros;
+        sim.posicion = posicion;
+        if (insertarAmbitoLocal(tabla, $1.lexema,&sim) == -1){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+      }else{
+        printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+        deleteTablaSimbolos(tabla);
+        return -1;
+      }
+    }
+    };
