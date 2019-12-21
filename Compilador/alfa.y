@@ -14,7 +14,7 @@
   TIPO tipo;
   CATEGORIA categoria;
   int valor;
-  int longitud;
+  int longitud = 1;
   int num_parametros;
   int posicion = 1;
   int etiqueta = 1;
@@ -88,12 +88,11 @@ inicioTabla: {
     printf("Error en la tabla de simbolos: No se ha creado la tabla de simbolos\n");
     return -1;
   }
+  escribir_cabecera_bss(out);
 }
 
 escritura_TS: {
   escribir_subseccion_data(out);
-  escribir_cabecera_bss(out);
-  // Faltan cosas como se cogen
 }
 
 escritura_main: {
@@ -160,25 +159,33 @@ bloque:  condicional {fprintf(out,";R40:\t<bloque> ::= <condicional>\n");}
 
 asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
             {fprintf(out,";R43:\t<asignacion> ::= <identificador> = <exp>\n");
+              simboloTabla *simbolo;
+              SIMBOLO *sim_aux;
               if (ambito == GLOBAL){
-                if(buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
+                if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
                   printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
               }else{
-                if(buscarAmbitoLocal(tabla,$1.lexema) == NULL){
+                if((simbolo = buscarAmbitoLocal(tabla,$1.lexema)) == NULL){
                   printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
               }
-              if($1.cat_simbolo == FUNCION){
+              sim_aux = getValor(simbolo);
+              if(sim_aux == NULL){
+                printf("****Error en la tabla de simbolos\n");
+                deleteTablaSimbolos(tabla);
+                return -1;
+              }
+              if(sim_aux->cat_simbolo == FUNCION){
                 printf("****Error en lin %li: Asignacion incompatible\n",nline);
                 deleteTablaSimbolos(tabla);
                 return -1;
               }
-              if($1.categoria == VECTOR){
+              if(sim_aux->categoria == VECTOR){
                 printf("****Error en lin %li: Asignacion incompatible\n",nline);
                 deleteTablaSimbolos(tabla);
                 return -1;
@@ -188,7 +195,7 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
                 deleteTablaSimbolos(tabla);
                 return -1;
               }
-              asignar(out,$1.lexema,$3.es_variable);
+              asignar(out,$1.lexema,$3.es_direccion);
             }
            | elemento_vector TOK_ASIGNACION exp {fprintf(out,";R44:\t<asignacion> ::= <elemento_vector> = <exp>\n");};
 
@@ -239,7 +246,7 @@ lectura: TOK_SCANF identificador
 
 escritura: TOK_PRINTF exp
             {fprintf(out,";R56:\t<escritura> ::= printf <exp>\n");
-            operandoEnPilaAArgumento(out,$2.es_variable);
+            operandoEnPilaAArgumento(out,$2.es_direccion);
             escribir(out,$2.es_variable,$2.tipo);
               };
 
@@ -284,25 +291,25 @@ exp:  exp TOK_MAS exp
           return -1;
         }
       }
-      if($1.cat_simbolo == FUNCION){
-        printf("****Error en lin %li: Asignacion incompatible\n",nline);
-        deleteTablaSimbolos(tabla);
-        return -1;
-      }
-      if($1.categoria == VECTOR){
-        printf("****Error en lin %li: Asignacion incompatible\n",nline);
-        deleteTablaSimbolos(tabla);
-        return -1;
-      }
       sim_aux = getValor(simbolo);
       if(sim_aux == NULL){
         printf("****Error en la tabla de simbolos\n");
         deleteTablaSimbolos(tabla);
         return -1;
       }
+      if(sim_aux->cat_simbolo == FUNCION){
+        printf("****Error en lin %li: Asignacion incompatible\n",nline);
+        deleteTablaSimbolos(tabla);
+        return -1;
+      }
+      if(sim_aux->categoria == VECTOR){
+        printf("****Error en lin %li: Asignacion incompatible\n",nline);
+        deleteTablaSimbolos(tabla);
+        return -1;
+      }
       $$.tipo = sim_aux->tipo;
-      $$.es_direccion = 1;
-      escribir_operando(out,$1.lexema,1);
+      $$.es_direccion = 0;
+      escribir_operando(out,$1.lexema,0);
     }
     | constante
       {fprintf(out,";R81:\t<exp> ::= <constante>\n");
@@ -440,68 +447,69 @@ constante_entera: TOK_CONSTANTE_ENTERA
     escribir_operando(out,valor,0);
     };
 
-identificador: TOK_IDENTIFICADOR
-    {fprintf(out,";R108:\t<identificador> ::= TOK_IDENTIFICADOR\n");
-    if (ambito == GLOBAL){
-      if (buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
-        SIMBOLO sim;
-        sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
-        if (sim.identificador == NULL){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
+    identificador: TOK_IDENTIFICADOR
+        {fprintf(out,";R108:\t<identificador> ::= TOK_IDENTIFICADOR\n");
+        if (ambito == GLOBAL){
+          if (buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
+            SIMBOLO sim;
+            sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+            if (sim.identificador == NULL){
+              printf("****Error en la tabla de simbolos\n");
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+            strcpy(sim.identificador,$1.lexema);
+            sim.cat_simbolo = cat_simbolo;
+            sim.tipo = tipo;
+            sim.categoria = categoria;
+            sim.valor = valor;
+            sim.longitud = longitud;
+            sim.num_parametros = num_parametros;
+            sim.posicion = posicion;
+            if (insertarAmbitoGlobal(tabla, $1.lexema,&sim) == -1){
+              printf("****Error en la tabla de simbolos\n");
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+            declarar_variable(out,$1.lexema,sim.tipo,sim.longitud);
+          }else{
+            printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+        }else{
+          if (buscarAmbitoLocal(tabla,$1.lexema) == NULL){
+            if (categoria != ESCALAR){
+              printf("****Error en la tabla de simbolos\n");
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+            SIMBOLO sim;
+            posicion ++;
+            sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+            if (sim.identificador == NULL){
+              printf("****Error en la tabla de simbolos\n");
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+            strcpy(sim.identificador,$1.lexema);
+            sim.cat_simbolo = cat_simbolo;
+            sim.tipo = tipo;
+            sim.categoria = categoria;
+            sim.valor = valor;
+            sim.longitud = longitud;
+            // Revisar las dos siguientes
+            sim.num_parametros = num_parametros;
+            sim.posicion = posicion;
+            if (insertarAmbitoLocal(tabla, $1.lexema,&sim) == -1){
+              printf("****Error en la tabla de simbolos\n");
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+          }else{
+            printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
         }
-        strcpy(sim.identificador,$1.lexema);
-        sim.cat_simbolo = cat_simbolo;
-        sim.tipo = tipo;
-        sim.categoria = categoria;
-        sim.valor = valor;
-        sim.longitud = longitud;
-        sim.num_parametros = num_parametros;
-        sim.posicion = posicion;
-        if (insertarAmbitoGlobal(tabla, $1.lexema,&sim) == -1){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
-        }
-      }else{
-        printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
-        deleteTablaSimbolos(tabla);
-        return -1;
-      }
-    }else{
-      if (buscarAmbitoLocal(tabla,$1.lexema) == NULL){
-        if (categoria != ESCALAR){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
-        }
-        SIMBOLO sim;
-        posicion ++;
-        sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
-        if (sim.identificador == NULL){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
-        }
-        strcpy(sim.identificador,$1.lexema);
-        sim.cat_simbolo = cat_simbolo;
-        sim.tipo = tipo;
-        sim.categoria = categoria;
-        sim.valor = valor;
-        sim.longitud = longitud;
-        // Revisar las dos siguientes
-        sim.num_parametros = num_parametros;
-        sim.posicion = posicion;
-        if (insertarAmbitoLocal(tabla, $1.lexema,&sim) == -1){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
-        }
-      }else{
-        printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
-        deleteTablaSimbolos(tabla);
-        return -1;
-      }
-    }
-    };
+        };
