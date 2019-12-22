@@ -317,7 +317,7 @@ void escribir(FILE* fpasm, int es_variable, int tipo){
         }
         /*Restauramos el puntero a pila*/
         if(tipo==BOOLEANO||tipo==ENTERO) fprintf(fpasm, "\tadd esp, 4\n");
-        fprintf(fpasm, "call print_endofline\n");
+        fprintf(fpasm, "\tcall print_endofline\n");
 }
 
 
@@ -385,7 +385,7 @@ void declararFuncion(FILE* fd_asm, char* nombre_funcion, int num_var_loc){
         fprintf(fd_asm, "_%s:\n", nombre_funcion);
         fprintf(fd_asm, "\tpush dword ebp\n");
         fprintf(fd_asm, "\tmov dword ebp, esp\n");
-        fprintf(fd_asm, "\tsub esp, 4*%d\n", num_var_loc);
+        fprintf(fd_asm, "\tsub esp, %d\n", num_var_loc*4);
 }
 
 void retornarFuncion(FILE* fd_asm, int es_variable){
@@ -416,18 +416,17 @@ void asignarDestinoEnPila(FILE* fpasm, int es_variable){
 
 void operandoEnPilaAArgumento(FILE * fd_asm, int es_variable){
         if(es_variable == 1) {
-                fprintf(fd_asm, "pop dword eax\n");
-                fprintf(fd_asm, "mov eax, [eax]\n");
-                fprintf(fd_asm, "push dword eax\n");
+                fprintf(fd_asm, "\tpop dword eax\n");
+                fprintf(fd_asm, "\tmov eax, [eax]\n");
+                fprintf(fd_asm, "\tpush dword eax\n");
         }
 }
 
 void llamarFuncion(FILE * fd_asm, char * nombre_funcion, int num_argumentos){
-        fprintf(fd_asm, "call _%s\n", nombre_funcion);
-        fprintf(fd_asm, "add esp, 4*%d\n",num_argumentos);
-        fprintf(fd_asm, "push dword eax\n");
+        fprintf(fd_asm, "\tcall _%s\n", nombre_funcion);
 }
 
 void limpiarPila(FILE * fd_asm, int num_argumentos){
-        fprintf(fd_asm, "add esp, 4*%d\n",num_argumentos);
+        fprintf(fd_asm, "\tadd esp, %d\n",num_argumentos*4);
+        fprintf(fd_asm, "\tpush dword eax\n");
 }

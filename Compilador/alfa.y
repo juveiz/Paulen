@@ -21,6 +21,7 @@
   int posicion_parametro = 0;
   int etiqueta = 0;
   int fn_return = 0;
+  TIPO fn_tipo;
 %}
 %union
 {
@@ -104,10 +105,10 @@ inicioTabla: {
 
 escritura_TS: {
   escribir_subseccion_data(out);
+  escribir_segmento_codigo(out);
 }
 
 escritura_main: {
-  escribir_segmento_codigo(out);
   //creo faltan funciones
   escribir_inicio_main(out);
 }
@@ -120,7 +121,11 @@ declaracion: clase identificadores TOK_PUNTOYCOMA {fprintf(out,";R4:\t<declaraci
 clase:  clase_escalar {fprintf(out,";R5:\t<clase> ::= <clase_escalar>\n"); categoria = ESCALAR;}
       | clase_vector {fprintf(out,";R7:\t<clase> ::= <clase_vector>\n"); categoria = VECTOR;};
 
-clase_escalar: tipo {fprintf(out,";R9:\t<clase_escalar> ::= <tipo>\n");};
+clase_escalar: tipo
+               {
+                 fprintf(out,";R9:\t<clase_escalar> ::= <tipo>\n");
+                 longitud = 1;
+              };
 
 tipo:   TOK_INT {fprintf(out,";R10:\t<tipo> ::= int\n"); tipo = ENTERO;}
       | TOK_BOOLEAN {fprintf(out,";R11:\t<tipo> ::= boolean\n"); tipo = BOOLEANO;};
@@ -158,6 +163,7 @@ funcion: fn_declaracion sentencias TOK_LLAVEDERECHA
            }
            simbolo = getValor(simboloTabla);
            simbolo->num_parametros=num_parametros;
+           ambito = GLOBAL;
         };
 
 fn_declaracion: fn_nombre TOK_PARENTESISIZQUIERDO parametros_funcion TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA declaraciones_funcion
@@ -173,8 +179,11 @@ fn_declaracion: fn_nombre TOK_PARENTESISIZQUIERDO parametros_funcion TOK_PARENTE
                   simbolo->num_parametros = num_parametros;
                   simbolo->num_var_locales = num_var_locales;
                   strcpy($$.lexema, $1.lexema);
-                  $$.tipo = $1.tipo;
                   declararFuncion(out, $1.lexema, num_var_locales);
+                  //TODO donde poner esto, exp: identificador
+                  for(int i = 0; i<num_parametros; i++) {
+                    escribirParametro(out, i, num_parametros);
+                  }
                 };
 
 fn_nombre: TOK_FUNCTION tipo TOK_IDENTIFICADOR
@@ -197,7 +206,6 @@ fn_nombre: TOK_FUNCTION tipo TOK_IDENTIFICADOR
              strcpy($$.lexema, $3.lexema);
              sim->cat_simbolo = FUNCION;
              sim->tipo = tipo;
-             $$.tipo = tipo;
              sim->num_parametros = 0;
              sim->num_var_locales = 0;
              posicion = 1;
@@ -205,6 +213,8 @@ fn_nombre: TOK_FUNCTION tipo TOK_IDENTIFICADOR
              posicion_parametro = 0;
              num_parametros = 0;
              fn_return = 0;
+             fn_tipo = tipo;
+             ambito = LOCAL;
              if( aperturaAmbitoLocal(tabla, $3.lexema, sim) == -1) {
                printf("****Error en la tabla de simbolos\n");
                deleteTablaSimbolos(tabla);
@@ -476,7 +486,7 @@ lectura: TOK_SCANF TOK_IDENTIFICADOR
   }
 
   /* TODO
-    Si el identificador en una variable global , su dirección es su lexema
+    Si el identificador en una variable global, su dirección es su lexema
     Si el identificador es un parámetro o una variable local, su dirección se expresa en función de ebp y la
     posición del parámetro o variable local
   */
@@ -501,7 +511,9 @@ escritura: TOK_PRINTF exp
 retorno_funcion: TOK_RETURN exp
                  {
                    fprintf(out,";R61:\t<retorno_funcion> ::= return <exp>\n");
-                   //TODO comprobar que tipo de exp igual que el de la funcion
+                   if(fn_tipo != $2.tipo) {
+                     printf("****Error en lin %li: Tipo incorrecto en retorno\n",nline);
+                   }
                    fn_return ++;
                    retornarFuncion(out,$2.es_direccion);
                 };
@@ -656,13 +668,26 @@ exp:  exp TOK_MAS exp
       $$.es_direccion = $2.es_direccion;
     }
     | elemento_vector {fprintf(out,";R85:\t<exp> ::= <elemento_vector>\n");}
-    | identificador TOK_PARENTESISIZQUIERDO lista_expresiones TOK_PARENTESISDERECHO {fprintf(out,";R88:\t<exp> ::= <identificador> ( <lista_expresiones> )\n");};
+    | TOK_IDENTIFICADOR TOK_PARENTESISIZQUIERDO lista_expresiones TOK_PARENTESISDERECHO
+      {
+        simboloTabla * simboloTabla;
+        SIMBOLO * simbolo;
+        fprintf(out,";R88:\t<exp> ::= <identificador> ( <lista_expresiones> )\n");
+        if((simboloTabla = buscarAmbitoGlobal(tabla, $1.lexema)) == NULL) {
+          printf("****Error en lin %li: La funcion no existe\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        simbolo = getValor(simboloTabla);
+        llamarFuncion(out, $1.lexema, simbolo->num_parametros);
+        limpiarPila(out, simbolo->num_parametros);
+    };
 
-  lista_expresiones: exp resto_lista_expresiones {fprintf(out,";R89:\t<lista_expresiones> ::= <exp> <resto_lista_expresiones>\n");}
-                    |/*vacio*/{fprintf(out,";R90:\t<lista_expresiones> ::= \n");};
+lista_expresiones: exp resto_lista_expresiones {fprintf(out,";R89:\t<lista_expresiones> ::= <exp> <resto_lista_expresiones>\n");}
+                  |/*vacio*/{fprintf(out,";R90:\t<lista_expresiones> ::= \n");};
 
-  resto_lista_expresiones: TOK_COMA exp resto_lista_expresiones {fprintf(out,";R91:\t<resto_lista_expresiones> ::= , <exp> <resto_lista_expresiones>\n");}
-                          |/*vacio*/{fprintf(out,";R92:\t<resto_lista_expresiones> ::= \n");};
+resto_lista_expresiones: TOK_COMA exp resto_lista_expresiones {fprintf(out,";R91:\t<resto_lista_expresiones> ::= , <exp> <resto_lista_expresiones>\n");}
+                        |/*vacio*/{fprintf(out,";R92:\t<resto_lista_expresiones> ::= \n");};
 
 comparacion:  exp TOK_IGUAL exp
               {
