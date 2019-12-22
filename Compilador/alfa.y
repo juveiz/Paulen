@@ -63,10 +63,6 @@
 %token TOK_FALSE
 %token TOK_ERROR
 
-%left TOK_MAS TOK_MENOS TOK_OR
-%left TOK_ASTERISCO TOK_DIVISION TOK_AND
-%right TOK_NOT
-
 %type <atributos> condicional
 %type <atributos> comparacion
 %type <atributos> elemento_vector
@@ -79,6 +75,12 @@
 %type <atributos> if_exp_sentencias
 %type <atributos> while
 %type <atributos> while_exp
+
+%left TOK_MAS TOK_MENOS TOK_OR
+%left TOK_ASTERISCO TOK_DIVISION TOK_AND
+%right TOK_NOT
+
+
 
 %%
 programa: TOK_MAIN inicioTabla TOK_LLAVEIZQUIERDA declaraciones escritura_TS funciones escritura_main sentencias TOK_LLAVEDERECHA
@@ -228,13 +230,17 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
               deleteTablaSimbolos(tabla);
               return -1;
             }
-            escribir_operando(out,$1.valor,0);
-            escribir_elemento_vector(out,$1.nombre,sim_aux->longitud,$3.es_variable);
-            asignarDestinoEnPila(out,$3.es_variable);
+            char valor[MAX_INT];
+            sprintf(valor,"%d",$1.valor_entero);
+            escribir_operando(out,valor,0);
+            escribir_elemento_vector(out,$1.lexema,sim_aux->longitud,$3.es_direccion);
+            asignarDestinoEnPila(out,$3.es_direccion);
           };
 
 elemento_vector: TOK_IDENTIFICADOR TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO
           {fprintf(out,";R48:\t<elemento_vector> ::= <identificador> [ <exp> ]\n");
+          simboloTabla *simbolo;
+          SIMBOLO *sim_aux;
           if (ambito == GLOBAL){
             if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
               printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
@@ -268,9 +274,9 @@ elemento_vector: TOK_IDENTIFICADOR TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO
             return -1;
           }
           $$.tipo = sim_aux->tipo;
-          $$.es_variable = 1;
-          $$.valor = $3.valor;
-          escribir_elemento_vector(out,$1.nombre,simbolo->longitud,$3.es_variable);
+          $$.es_direccion = 1;
+          $$.valor_entero = $3.valor_entero;
+          escribir_elemento_vector(out,sim_aux->identificador,sim_aux->longitud,$3.es_direccion);
         };
 
 condicional:  if_exp sentencias TOK_LLAVEDERECHA
