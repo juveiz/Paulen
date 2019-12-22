@@ -262,6 +262,11 @@ elemento_vector: TOK_IDENTIFICADOR TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO
             deleteTablaSimbolos(tabla);
             return -1;
           }
+          if($3.tipo != ENTERO){
+            printf("****Error en lin %li: El indice en una operacion de indexacion tiene que ser de tipo entero\n",nline);
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
           $$.tipo = sim_aux->tipo;
           $$.es_variable = 1;
           $$.valor = $3.valor;
