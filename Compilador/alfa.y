@@ -575,7 +575,7 @@ identificador: TOK_IDENTIFICADOR
         sim->longitud = longitud;
         sim->num_parametros = num_parametros;
         sim->posicion = posicion;
-        if (insertarAmbitoGlobal(tabla, $1.lexema,&sim) == -1){
+        if (insertarAmbitoGlobal(tabla, $1.lexema, sim) == -1){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
           return -1;
@@ -610,7 +610,7 @@ identificador: TOK_IDENTIFICADOR
         // Revisar las dos siguientes
         sim->num_parametros = num_parametros;
         sim->posicion = posicion;
-        if (insertarAmbitoLocal(tabla, $1.lexema,&sim) == -1){
+        if (insertarAmbitoLocal(tabla, $1.lexema, sim) == -1){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
           return -1;
