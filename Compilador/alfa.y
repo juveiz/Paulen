@@ -561,7 +561,7 @@ identificador: TOK_IDENTIFICADOR
     if (ambito == GLOBAL){
       if (buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
         SIMBOLO *sim;
-        sim = (sim*)malloc(sizeof(SIMBOLO));
+        sim = (SIMBOLO*)malloc(sizeof(SIMBOLO));
         if(sim == NULL){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
@@ -600,6 +600,7 @@ identificador: TOK_IDENTIFICADOR
           return -1;
         }
         SIMBOLO *sim;
+        sim = (SIMBOLO*)malloc(sizeof(SIMBOLO));
         if(sim == NULL){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
