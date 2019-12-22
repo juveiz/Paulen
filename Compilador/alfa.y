@@ -273,6 +273,7 @@ elemento_vector: TOK_IDENTIFICADOR TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO
             deleteTablaSimbolos(tabla);
             return -1;
           }
+          // Pensar si queremos que dar un numero que no corresponde de Error
           $$.tipo = sim_aux->tipo;
           $$.es_direccion = 1;
           $$.valor_entero = $3.valor_entero;
@@ -516,7 +517,11 @@ exp:  exp TOK_MAS exp
       {fprintf(out,";R81:\t<exp> ::= <constante>\n");
       $$.tipo = $1.tipo;
       $$.es_direccion = $1.es_direccion;}
-    | TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO {fprintf(out,";R82:\t<exp> ::= ( <exp> )\n");}
+    | TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO
+      {fprintf(out,";R82:\t<exp> ::= ( <exp> )\n");
+      $$.tipo = $2.tipo;
+      $$.es_direccion = $2.es_direccion;
+    }
     | TOK_PARENTESISIZQUIERDO comparacion TOK_PARENTESISDERECHO
     {
       fprintf(out,";R83:\t<exp> ::= ( <comparacion> )\n");
