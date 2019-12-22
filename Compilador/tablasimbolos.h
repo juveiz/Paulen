@@ -13,10 +13,6 @@ char * getIdentificador(simboloTabla * simbolo);
 
 SIMBOLO * getValor(simboloTabla * simbolo);
 
-CATEGORIA_SIMBOLO getCategoriaSimbolo(simboloTabla * simbolo);
-
-CATEGORIA getCategoria(simboloTabla * simbolo);
-
 tablaSimbolos * createTablaSimbolos();
 
 void deleteTablaSimbolos(tablaSimbolos * tabla);

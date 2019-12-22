@@ -15,9 +15,12 @@
   CATEGORIA categoria;
   int valor;
   int longitud = 1;
-  int num_parametros;
-  int posicion = 1;
+  int num_parametros = 0;
+  int num_var_locales = 0;
+  int posicion = 0;
+  int posicion_parametro = 0;
   int etiqueta = 0;
+  int fn_return = 0;
 %}
 %union
 {
@@ -79,6 +82,8 @@
 %type <atributos> if_exp_sentencias
 %type <atributos> while
 %type <atributos> while_exp
+%type <atributos> fn_declaracion
+%type <atributos> fn_nombre
 
 %%
 programa: TOK_MAIN inicioTabla TOK_LLAVEIZQUIERDA declaraciones escritura_TS funciones escritura_main sentencias TOK_LLAVEDERECHA
@@ -133,8 +138,83 @@ identificadores:   identificador {fprintf(out,";R18:\t<identificadores> ::= <ide
 funciones: funcion funciones {fprintf(out,";R20:\t<funciones> ::= <function> <funciones>\n");};
           |/*vacio*/{fprintf(out,";R21:\t<funciones> ::= \n");};
 
-funcion: TOK_FUNCTION tipo identificador TOK_PARENTESISIZQUIERDO parametros_funcion TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA declaraciones_funcion sentencias TOK_LLAVEDERECHA
-{fprintf(out,";R22:\t<function> ::= function <tipo> <identificador> (<parametro_funcion>) {<declaraciones_funcion> <sentencias>}\n");};
+funcion: fn_declaracion sentencias TOK_LLAVEDERECHA
+         {
+           fprintf(out,";R22:\t<function> ::= function <tipo> <identificador> (<parametro_funcion>) {<declaraciones_funcion> <sentencias>}\n");
+           if (fn_return < 1){
+             printf("****Funcion %s sin sentencia de retorno\n", $1.lexema);
+             deleteTablaSimbolos(tabla);
+             return -1;
+           }
+           limpiarAmbitoLocal(tabla);
+           simboloTabla * simboloTabla;
+           SIMBOLO * simbolo;
+           if( (simboloTabla = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL) {
+            printf("****Error en la tabla de simbolos\n");
+            deleteTablaSimbolos(tabla);
+            return -1;
+           }
+           simbolo = getValor(simboloTabla);
+           simbolo->num_parametros=num_parametros;
+        };
+
+fn_declaracion: fn_nombre TOK_PARENTESISIZQUIERDO parametros_funcion TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA declaraciones_funcion
+                {
+                  simboloTabla * simboloTabla;
+                  SIMBOLO * simbolo;
+                  if((simboloTabla = buscarAmbitoLocal(tabla,$1.lexema)) == NULL) {
+                    printf("****Error en la tabla de simbolos\n");
+                    deleteTablaSimbolos(tabla);
+                    return -1;
+                  }
+                  simbolo = getValor(simboloTabla);
+                  simbolo->num_parametros = num_parametros;
+                  simbolo->num_var_locales = num_var_locales;
+                  strcpy($$.lexema, $1.lexema);
+                  $$.tipo = $1.tipo;
+                  declararFuncion(out, $1.lexema, num_var_locales);
+                };
+
+fn_nombre: TOK_FUNCTION tipo TOK_IDENTIFICADOR
+           {
+             if (buscarAmbitoGlobal(tabla,$3.lexema) == NULL){
+             SIMBOLO *sim;
+             sim = (SIMBOLO*)malloc(sizeof(SIMBOLO));
+             if(sim == NULL){
+               printf("****Error en la tabla de simbolos\n");
+               deleteTablaSimbolos(tabla);
+               return -1;
+             }
+             sim->identificador = (char*)malloc(sizeof(char)*(strlen($3.lexema) + 1));
+             if (sim->identificador == NULL){
+               printf("****Error en la tabla de simbolos\n");
+               deleteTablaSimbolos(tabla);
+               return -1;
+             }
+             strcpy(sim->identificador,$3.lexema);
+             strcpy($$.lexema, $3.lexema);
+             sim->cat_simbolo = FUNCION;
+             sim->tipo = tipo;
+             $$.tipo = tipo;
+             sim->num_parametros = 0;
+             sim->num_var_locales = 0;
+             posicion = 1;
+             num_var_locales = 0;
+             posicion_parametro = 0;
+             num_parametros = 0;
+             fn_return = 0;
+             if( aperturaAmbitoLocal(tabla, $3.lexema, sim) == -1) {
+               printf("****Error en la tabla de simbolos\n");
+               deleteTablaSimbolos(tabla);
+               return -1;
+             };
+            }
+             else {
+               printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+               deleteTablaSimbolos(tabla);
+               return -1;
+             }
+           };
 
 parametros_funcion:  parametro_funcion resto_parametros_funcion {fprintf(out,";R23:\t<parametros_funcion> ::= <parametro_funcion> <resto_parametros_funcion>\n");}
                     |/*vacio*/{fprintf(out,";R24:\t<parametros_funcion> ::= \n");};
@@ -142,7 +222,47 @@ parametros_funcion:  parametro_funcion resto_parametros_funcion {fprintf(out,";R
 resto_parametros_funcion: TOK_PUNTOYCOMA parametro_funcion resto_parametros_funcion {fprintf(out,";R25:\t<resto_parametros_funcion> ::= ; <parametro_funcion> <resto_parametros_funcion>\n");};
                          |/*vacio*/{fprintf(out,";R26:\t<resto_parametros_funcion> ::= \n");};
 
-parametro_funcion: tipo identificador {fprintf(out,";R27:\t<parametro_funcion> ::= <tipo> <identificador>\n");};
+parametro_funcion: tipo idpf
+                   {
+                     fprintf(out,";R27:\t<parametro_funcion> ::= <tipo> <identificador>\n");
+                     num_parametros++;
+                     posicion_parametro++;
+                  };
+
+idpf: TOK_IDENTIFICADOR
+      {
+        if (buscarAmbitoLocal(tabla,$1.lexema) == NULL){
+          SIMBOLO *sim;
+          sim = (SIMBOLO*)malloc(sizeof(SIMBOLO));
+          if(sim == NULL){
+            printf("****Error en la tabla de simbolos\n");
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+          sim->identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+          if (sim->identificador == NULL){
+            printf("****Error en la tabla de simbolos\n");
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+          strcpy(sim->identificador,$1.lexema);
+          sim->cat_simbolo = PARAMETRO;
+          sim->tipo = tipo;
+          sim->categoria = ESCALAR;
+          sim->valor = valor;
+          sim->longitud = longitud;
+          sim->posicion = posicion_parametro;
+          if (insertarAmbitoLocal(tabla, $1.lexema, sim) == -1){
+            printf("****Error en la tabla de simbolos\n");
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+        }else{
+          printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+    };
 
 declaraciones_funcion: declaraciones {fprintf(out,";R28:\t<declaraciones_funcion> ::= <declaraciones>\n");}
                       |/*vacio*/{fprintf(out,";R29:\t<declaraciones_funcion> ::= \n");};
@@ -326,17 +446,18 @@ while: TOK_WHILE TOK_PARENTESISIZQUIERDO
 lectura: TOK_SCANF TOK_IDENTIFICADOR
 {
   fprintf(out,";R54:\t<lectura> ::= scanf <identificador>\n");
-  simboloTabla * simbolo;
-  if(ambito == GLOBAL) simbolo = buscarAmbitoGlobal(tabla, $2.lexema);
-  else simbolo = buscarAmbitoLocal(tabla, $2.lexema);
+  simboloTabla * simboloTabla;
+  SIMBOLO * simbolo;
+  if(ambito == GLOBAL) simboloTabla = buscarAmbitoGlobal(tabla, $2.lexema);
+  else simboloTabla = buscarAmbitoLocal(tabla, $2.lexema);
 
-  if(simbolo == NULL) {
+  if(simboloTabla == NULL) {
     printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$2.lexema);
     deleteTablaSimbolos(tabla);
     return -1;
   }
-
-  if(getCategoriaSimbolo(simbolo) == FUNCION || getCategoria(simbolo) == VECTOR){
+  simbolo = getValor(simboloTabla);
+  if(simbolo->cat_simbolo == FUNCION || simbolo->categoria == VECTOR){
     printf("****Error en lin %li: Categoria o clase incorrecta de (%s)\n",nline,$2.lexema);
     deleteTablaSimbolos(tabla);
     return -1;
@@ -365,7 +486,13 @@ escritura: TOK_PRINTF exp
             escribir(out,0,$2.tipo);
               };
 
-retorno_funcion: TOK_RETURN exp {fprintf(out,";R61:\t<retorno_funcion> ::= return <exp>\n");};
+retorno_funcion: TOK_RETURN exp
+                 {
+                   fprintf(out,";R61:\t<retorno_funcion> ::= return <exp>\n");
+                   //TODO comprobar que tipo de exp igual que el de la funcion
+                   fn_return ++;
+                   retornarFuncion(out,$2.es_direccion);
+                };
 
 exp:  exp TOK_MAS exp
       {
@@ -670,6 +797,7 @@ identificador: TOK_IDENTIFICADOR
           return -1;
         }
         posicion ++;
+        num_var_locales ++;
         sim->identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
         if (sim->identificador == NULL){
           printf("****Error en la tabla de simbolos\n");
