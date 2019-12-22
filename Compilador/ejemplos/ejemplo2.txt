@@ -10,7 +10,7 @@ main {
  scanf y2;
  printf y1;
  if (
- (y1 == y2)
+ (x1 == x2)
  )
  {
  printf 1;

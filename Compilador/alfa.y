@@ -194,7 +194,7 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
                 deleteTablaSimbolos(tabla);
                 return -1;
               }
-              if($1.tipo != $3.tipo){
+              if(sim_aux->tipo != $3.tipo){
                 printf("****Error en lin %li: Asignacion incompatible\n",nline);
                 deleteTablaSimbolos(tabla);
                 return -1;
@@ -299,7 +299,7 @@ lectura: TOK_SCANF TOK_IDENTIFICADOR
 escritura: TOK_PRINTF exp
             {fprintf(out,";R56:\t<escritura> ::= printf <exp>\n");
             operandoEnPilaAArgumento(out,$2.es_direccion);
-            escribir(out,$2.es_direccion,$2.tipo);
+            escribir(out,0,$2.tipo);
               };
 
 retorno_funcion: TOK_RETURN exp {fprintf(out,";R61:\t<retorno_funcion> ::= return <exp>\n");};
