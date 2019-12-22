@@ -593,7 +593,7 @@ identificador: TOK_IDENTIFICADOR
           deleteTablaSimbolos(tabla);
           return -1;
         }
-        SIMBOLO sim;
+        SIMBOLO *sim;
         posicion ++;
         sim->identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
         if (sim->identificador == NULL){
