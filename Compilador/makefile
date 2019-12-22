@@ -5,10 +5,10 @@ EJS = alfa
 
 all: $(EJS)
 
-alfa: 
+alfa:
 	flex alfa.l
 	bison -d alfa.y
 	$(CC) $(CFLAGS) alfa.c $(LIBS) -o alfa
 
 clean:
-	rm -rf *.o lex.yy.c $(EJS)
+	rm -rf lex.yy.c $(EJS)

@@ -435,8 +435,8 @@ exp:  exp TOK_MAS exp
         return -1;
       }
       $$.tipo = sim_aux->tipo;
-      $$.es_direccion = 0;
-      escribir_operando(out,$1.lexema,0);
+      $$.es_direccion = 1;
+      escribir_operando(out,$1.lexema,1);
     }
     | constante
       {fprintf(out,";R81:\t<exp> ::= <constante>\n");
@@ -560,27 +560,27 @@ identificador: TOK_IDENTIFICADOR
     {fprintf(out,";R108:\t<identificador> ::= TOK_IDENTIFICADOR\n");
     if (ambito == GLOBAL){
       if (buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
-        SIMBOLO sim;
-        sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
-        if (sim.identificador == NULL){
+        SIMBOLO *sim;
+        sim->identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+        if (sim->identificador == NULL){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
           return -1;
         }
-        strcpy(sim.identificador,$1.lexema);
-        sim.cat_simbolo = cat_simbolo;
-        sim.tipo = tipo;
-        sim.categoria = categoria;
-        sim.valor = valor;
-        sim.longitud = longitud;
-        sim.num_parametros = num_parametros;
-        sim.posicion = posicion;
+        strcpy(sim->identificador,$1.lexema);
+        sim->cat_simbolo = cat_simbolo;
+        sim->tipo = tipo;
+        sim->categoria = categoria;
+        sim->valor = valor;
+        sim->longitud = longitud;
+        sim->num_parametros = num_parametros;
+        sim->posicion = posicion;
         if (insertarAmbitoGlobal(tabla, $1.lexema,&sim) == -1){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
           return -1;
         }
-        declarar_variable(out,$1.lexema,sim.tipo,sim.longitud);
+        declarar_variable(out,$1.lexema,sim->tipo,sim->longitud);
       }else{
         printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
         deleteTablaSimbolos(tabla);
@@ -595,21 +595,21 @@ identificador: TOK_IDENTIFICADOR
         }
         SIMBOLO sim;
         posicion ++;
-        sim.identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
-        if (sim.identificador == NULL){
+        sim->identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+        if (sim->identificador == NULL){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
           return -1;
         }
-        strcpy(sim.identificador,$1.lexema);
-        sim.cat_simbolo = cat_simbolo;
-        sim.tipo = tipo;
-        sim.categoria = categoria;
-        sim.valor = valor;
-        sim.longitud = longitud;
+        strcpy(sim->identificador,$1.lexema);
+        sim->cat_simbolo = cat_simbolo;
+        sim->tipo = tipo;
+        sim->categoria = categoria;
+        sim->valor = valor;
+        sim->longitud = longitud;
         // Revisar las dos siguientes
-        sim.num_parametros = num_parametros;
-        sim.posicion = posicion;
+        sim->num_parametros = num_parametros;
+        sim->posicion = posicion;
         if (insertarAmbitoLocal(tabla, $1.lexema,&sim) == -1){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
