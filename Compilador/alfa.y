@@ -201,9 +201,72 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
               }
               asignar(out,$1.lexema,$3.es_direccion);
             }
-           | elemento_vector TOK_ASIGNACION exp {fprintf(out,";R44:\t<asignacion> ::= <elemento_vector> = <exp>\n");};
+           | elemento_vector TOK_ASIGNACION exp
+            {fprintf(out,";R44:\t<asignacion> ::= <elemento_vector> = <exp>\n");
+            simboloTabla *simbolo;
+            SIMBOLO *sim_aux;
+            // Revisar
+            if (ambito == GLOBAL){
+              if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
+                printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+                deleteTablaSimbolos(tabla);
+                return -1;
+              }
+            }else{
+              printf("****Error en lin %li: Acceso a vector en ambito local (%s)\n",nline,$1.lexema);
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+            sim_aux = getValor(simbolo);
+            if(sim_aux == NULL){
+              printf("****Error en la tabla de simbolos\n");
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+            if($1.tipo != $3.tipo){
+              printf("****Error en lin %li: Asignacion incompatible\n",nline);
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+            escribir_operando(out,$1.valor,0);
+            escribir_elemento_vector(out,$1.nombre,sim_aux->longitud,$3.es_variable);
+            asignarDestinoEnPila(out,$3.es_variable);
+          };
 
-elemento_vector: identificador TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO {fprintf(out,";R48:\t<elemento_vector> ::= <identificador> [ <exp> ]\n");};
+elemento_vector: TOK_IDENTIFICADOR TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO
+          {fprintf(out,";R48:\t<elemento_vector> ::= <identificador> [ <exp> ]\n");
+          if (ambito == GLOBAL){
+            if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
+              printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+              deleteTablaSimbolos(tabla);
+              return -1;
+            }
+          }else{
+            printf("****Error en lin %li: Acceso a vector en ambito local (%s)\n",nline,$1.lexema);
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+          sim_aux = getValor(simbolo);
+          if(sim_aux == NULL){
+            printf("****Error en la tabla de simbolos\n");
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+          if(sim_aux->cat_simbolo == FUNCION){
+            printf("****Error en lin %li: Intento de indexacion de una variable que no es de tipo vector\n",nline);
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+          if(sim_aux->categoria == ESCALAR){
+            printf("****Error en lin %li: Intento de indexacion de una variable que no es de tipo vector\n",nline);
+            deleteTablaSimbolos(tabla);
+            return -1;
+          }
+          $$.tipo = sim_aux->tipo;
+          $$.es_variable = 1;
+          $$.valor = $3.valor;
+          escribir_elemento_vector(out,$1.nombre,simbolo->longitud,$3.es_variable);
+        };
 
 condicional:  if_exp sentencias TOK_LLAVEDERECHA
               {
