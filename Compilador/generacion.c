@@ -306,8 +306,8 @@ void leer(FILE* fpasm, char* nombre, int tipo){
 
 void escribir(FILE* fpasm, int es_variable, int tipo){
         /*Introducimos la direccion*/
-        lectura_operando(fpasm,es_variable);
-        fprintf(fpasm, "\tpush dword eax\n");
+        //lectura_operando(fpasm,es_variable);
+        //fprintf(fpasm, "\tpush dword eax\n");
         /*Diferenciamos entre int y booleano*/
         if(tipo==ENTERO) {
                 fprintf(fpasm, "\tcall print_int\n");

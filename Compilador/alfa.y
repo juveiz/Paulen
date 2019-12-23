@@ -488,20 +488,6 @@ lectura: TOK_SCANF TOK_IDENTIFICADOR
     return -1;
   }
 
-  /* TODO
-    Si el identificador en una variable global, su dirección es su lexema
-    Si el identificador es un parámetro o una variable local, su dirección se expresa en función de ebp y la
-    posición del parámetro o variable local
-  */
-  if(ambito == GLOBAL){
-
-  }
-  else if(buscarAmbitoLocal(tabla, $2.lexema) != NULL){
-
-  }
-  else if(buscarAmbitoGlobal(tabla, $2.lexema) != NULL){
-
-  }
   leer(out, $2.lexema, $2.tipo);
   };
 
@@ -654,7 +640,7 @@ exp:  exp TOK_MAS exp
       $$.tipo = sim_aux->tipo;
       $$.es_direccion = 1;
       if (sim_aux->cat_simbolo == PARAMETRO){
-        escribirParametro(out,sim_aux->posicion,sim_aux->num_var_locales);
+        escribirParametro(out,sim_aux->posicion,num_parametros);
       }else if (sim_aux->cat_simbolo == VARIABLE){
         if(ambito == GLOBAL){
           escribir_operando(out,$1.lexema,1);
@@ -695,6 +681,7 @@ exp:  exp TOK_MAS exp
           return -1;
         }
         simbolo = getValor(simboloTabla);
+        $$.tipo = simbolo->tipo;
         llamarFuncion(out, $1.lexema, simbolo->num_parametros);
         limpiarPila(out, simbolo->num_parametros);
     };
@@ -790,8 +777,24 @@ constante:  constante_logica
             $$.es_direccion = $1.es_direccion;}
          | constante_entera {fprintf(out,";R100:\t<constante> ::= <constante_entera>\n");};
 
-constante_logica:  TOK_TRUE {fprintf(out,";R102:\t<constante_logica> ::= true\n");}
-                 | TOK_FALSE {fprintf(out,";R103:\t<constante_logica> ::= false\n");};
+constante_logica:  TOK_TRUE
+                   {
+                     fprintf(out,";R102:\t<constante_logica> ::= true\n");
+                     $$.tipo = BOOLEANO;
+                     $$.es_direccion = 0;
+                     char valor[MAX_INT];
+                     sprintf(valor,"1");
+                     escribir_operando(out,valor,0);
+                  }
+                 | TOK_FALSE
+                   {
+                     fprintf(out,";R103:\t<constante_logica> ::= false\n");
+                     $$.tipo = BOOLEANO;
+                     $$.es_direccion = 0;
+                     char valor[MAX_INT];
+                     sprintf(valor,"0");
+                     escribir_operando(out,valor,0);
+                  };
 
 constante_entera: TOK_CONSTANTE_ENTERA
   {fprintf(out,";R104:\t<constante_entera> ::= TOK_CONSTANTE_ENTERA\n");
@@ -869,7 +872,6 @@ identificador: TOK_IDENTIFICADOR
           deleteTablaSimbolos(tabla);
           return -1;
         }
-        declarar_variable(out,$1.lexema,sim->tipo,sim->longitud);
       }else{
         printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
         deleteTablaSimbolos(tabla);
