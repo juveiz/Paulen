@@ -670,7 +670,13 @@ exp:  exp TOK_MAS exp
       $$.tipo = $2.tipo;
       $$.es_direccion = $2.es_direccion;
     }
-    | elemento_vector {fprintf(out,";R85:\t<exp> ::= <elemento_vector>\n");}
+    | elemento_vector
+      {
+        fprintf(out,";R85:\t<exp> ::= <elemento_vector>\n");
+        if(llamando_funcion == 1) {
+          operandoEnPilaAArgumento(out,1);
+        }
+    }
     | aux lista_expresiones TOK_PARENTESISDERECHO
       {
         simboloTabla * simboloTabla;
