@@ -109,7 +109,6 @@ escritura_TS: {
 }
 
 escritura_main: {
-  //creo faltan funciones
   escribir_inicio_main(out);
 }
 
@@ -164,6 +163,9 @@ funcion: fn_declaracion sentencias TOK_LLAVEDERECHA
            simbolo = getValor(simboloTabla);
            simbolo->num_parametros=num_parametros;
            ambito = GLOBAL;
+           num_parametros = 0;
+           num_var_locales = 0;
+           posicion_parametro = 0;
         };
 
 fn_declaracion: fn_nombre TOK_PARENTESISIZQUIERDO parametros_funcion TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA declaraciones_funcion
@@ -180,10 +182,6 @@ fn_declaracion: fn_nombre TOK_PARENTESISIZQUIERDO parametros_funcion TOK_PARENTE
                   simbolo->num_var_locales = num_var_locales;
                   strcpy($$.lexema, $1.lexema);
                   declararFuncion(out, $1.lexema, num_var_locales);
-                  //TODO donde poner esto, exp: identificador
-                  for(int i = 0; i<num_parametros; i++) {
-                    escribirParametro(out, i, num_parametros);
-                  }
                 };
 
 fn_nombre: TOK_FUNCTION tipo TOK_IDENTIFICADOR
@@ -215,7 +213,7 @@ fn_nombre: TOK_FUNCTION tipo TOK_IDENTIFICADOR
              fn_return = 0;
              fn_tipo = tipo;
              ambito = LOCAL;
-             if( aperturaAmbitoLocal(tabla, $3.lexema, sim) == -1) {
+             if(aperturaAmbitoLocal(tabla, $3.lexema, sim) == -1) {
                printf("****Error en la tabla de simbolos\n");
                deleteTablaSimbolos(tabla);
                return -1;
@@ -655,7 +653,20 @@ exp:  exp TOK_MAS exp
       }
       $$.tipo = sim_aux->tipo;
       $$.es_direccion = 1;
-      escribir_operando(out,$1.lexema,1);
+      if (sim_aux->cat_simbolo == PARAMETRO){
+        escribirParametro(out,sim_aux->posicion,sim_aux->num_var_locales);
+      }else if (sim_aux->cat_simbolo == VARIABLE){
+        if(ambito == GLOBAL){
+          escribir_operando(out,$1.lexema,1);
+        }else{
+          if (buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
+            escribirVariableLocal(out,sim_aux->posicion);
+          }else{
+            escribir_operando(out,$1.lexema,1);
+            operandoEnPilaAArgumento(out,1);
+          }
+        }
+      }
     }
     | constante
       {fprintf(out,";R81:\t<exp> ::= <constante>\n");
@@ -828,4 +839,41 @@ identificador: TOK_IDENTIFICADOR
         deleteTablaSimbolos(tabla);
         return -1;
       }
-    };
+    }else{
+      if (buscarAmbitoLocal(tabla,$1.lexema) == NULL){
+        SIMBOLO *sim;
+        sim = (SIMBOLO*)malloc(sizeof(SIMBOLO));
+        if(sim == NULL){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        sim->identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
+        if (sim->identificador == NULL){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        strcpy(sim->identificador,$1.lexema);
+        sim->cat_simbolo = cat_simbolo;
+        sim->tipo = tipo;
+        sim->categoria = categoria;
+        sim->valor = valor;
+        sim->longitud = longitud;
+        sim->num_parametros = num_parametros;
+        sim->posicion = posicion;
+        num_var_locales++;
+        sim->num_var_locales = num_var_locales;
+        if (insertarAmbitoLocal(tabla, $1.lexema, sim) == -1){
+          printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        declarar_variable(out,$1.lexema,sim->tipo,sim->longitud);
+      }else{
+        printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
+        deleteTablaSimbolos(tabla);
+        return -1;
+      }
+    }
+  }
