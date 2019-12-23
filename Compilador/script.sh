@@ -1,3 +1,6 @@
+make clean
+make
+
 ./alfa ./ejemplos/ejemplo1.txt ./ejemplos/ejemplo1.asm
 nasm -felf32 ./ejemplos/ejemplo1.asm
 gcc -m32 -o ./ejemplos/ejemplo1 ./ejemplos/ejemplo1.o alfalib.o

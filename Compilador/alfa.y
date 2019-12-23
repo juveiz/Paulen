@@ -100,11 +100,11 @@ inicioTabla: {
     printf("Error en la tabla de simbolos: No se ha creado la tabla de simbolos\n");
     return -1;
   }
+  escribir_subseccion_data(out);
   escribir_cabecera_bss(out);
 }
 
 escritura_TS: {
-  escribir_subseccion_data(out);
   escribir_segmento_codigo(out);
 }
 
@@ -331,7 +331,12 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
                 deleteTablaSimbolos(tabla);
                 return -1;
               }
-              asignar(out,$1.lexema,$3.es_direccion);
+              if(ambito == GLOBAL){
+                asignar(out,$1.lexema,$3.es_direccion);
+              }else{
+                escribirVariableLocal(out,sim_aux->posicion);
+                asignarDestinoEnPila(out,$3.es_direccion);
+              }
             }
            | elemento_vector TOK_ASIGNACION exp
             {fprintf(out,";R44:\t<asignacion> ::= <elemento_vector> = <exp>\n");
@@ -823,46 +828,4 @@ identificador: TOK_IDENTIFICADOR
         deleteTablaSimbolos(tabla);
         return -1;
       }
-    }else{
-      if (buscarAmbitoLocal(tabla,$1.lexema) == NULL){
-        if (categoria != ESCALAR){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
-        }
-        SIMBOLO *sim;
-        sim = (SIMBOLO*)malloc(sizeof(SIMBOLO));
-        if(sim == NULL){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
-        }
-        posicion ++;
-        num_var_locales ++;
-        sim->identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
-        if (sim->identificador == NULL){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
-        }
-        strcpy(sim->identificador,$1.lexema);
-        sim->cat_simbolo = cat_simbolo;
-        sim->tipo = tipo;
-        sim->categoria = categoria;
-        sim->valor = valor;
-        sim->longitud = longitud;
-        // Revisar las dos siguientes
-        sim->num_parametros = num_parametros;
-        sim->posicion = posicion;
-        if (insertarAmbitoLocal(tabla, $1.lexema, sim) == -1){
-          printf("****Error en la tabla de simbolos\n");
-          deleteTablaSimbolos(tabla);
-          return -1;
-        }
-      }else{
-        printf("****Error semantico en lin %li: Declaracion duplicada.\n",nline);
-        deleteTablaSimbolos(tabla);
-        return -1;
-      }
-    }
     };
