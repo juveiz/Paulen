@@ -17,6 +17,10 @@ gcc -m32 -o ./ejemplos/boolean ./ejemplos/boolean.o alfalib.o
 nasm -felf32 ./ejemplos/ejemplo2.asm
 gcc -m32 -o ./ejemplos/ejemplo2 ./ejemplos/ejemplo2.o alfalib.o
 
+./alfa ./ejemplos/anidado.txt ./ejemplos/anidado.asm
+nasm -felf32 ./ejemplos/anidado.asm
+gcc -m32 -o ./ejemplos/anidado ./ejemplos/anidado.o alfalib.o
+
 ./alfa ./ejemplos/condicionales.alfa ./ejemplos/condicionales.asm
 nasm -felf32 ./ejemplos/condicionales.asm
 gcc -m32 -o ./ejemplos/condicionales ./ejemplos/condicionales.o alfalib.o
