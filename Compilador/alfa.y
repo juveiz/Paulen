@@ -299,13 +299,13 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
               SIMBOLO *sim_aux;
               if (ambito == GLOBAL){
                 if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
-                  printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+                  printf("****Error semantico en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
               }else{
                 if((simbolo = buscarAmbitoLocal(tabla,$1.lexema)) == NULL){
-                  printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+                  printf("****Error semantico en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -317,17 +317,17 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
                 return -1;
               }
               if(sim_aux->cat_simbolo == FUNCION){
-                printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                printf("****Error semantico en lin %li: Asignacion incompatible\n",nline);
                 deleteTablaSimbolos(tabla);
                 return -1;
               }
               if(sim_aux->categoria == VECTOR){
-                printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                printf("****Error semantico en lin %li: Asignacion incompatible\n",nline);
                 deleteTablaSimbolos(tabla);
                 return -1;
               }
               if(sim_aux->tipo != $3.tipo){
-                printf("****Error en lin %li: Asignacion incompatible\n",nline);
+                printf("****Error semantico en lin %li: Asignacion incompatible\n",nline);
                 deleteTablaSimbolos(tabla);
                 return -1;
               }
@@ -345,12 +345,12 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
             // Revisar
             if (ambito == GLOBAL){
               if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
-                printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+                printf("****Error semantico en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
                 deleteTablaSimbolos(tabla);
                 return -1;
               }
             }else{
-              printf("****Error en lin %li: Acceso a vector en ambito local (%s)\n",nline,$1.lexema);
+              printf("****Error semantico en lin %li: Acceso a vector en ambito local (%s)\n",nline,$1.lexema);
               deleteTablaSimbolos(tabla);
               return -1;
             }
@@ -361,7 +361,7 @@ asignacion: TOK_IDENTIFICADOR TOK_ASIGNACION exp
               return -1;
             }
             if($1.tipo != $3.tipo){
-              printf("****Error en lin %li: Asignacion incompatible\n",nline);
+              printf("****Error semantico en lin %li: Asignacion incompatible\n",nline);
               deleteTablaSimbolos(tabla);
               return -1;
             }
@@ -378,12 +378,12 @@ elemento_vector: TOK_IDENTIFICADOR TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO
           SIMBOLO *sim_aux;
           if (ambito == GLOBAL){
             if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
-              printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+              printf("****Error semantico en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
               deleteTablaSimbolos(tabla);
               return -1;
             }
           }else{
-            printf("****Error en lin %li: Acceso a vector en ambito local (%s)\n",nline,$1.lexema);
+            printf("****Error semantico en lin %li: Acceso a vector en ambito local (%s)\n",nline,$1.lexema);
             deleteTablaSimbolos(tabla);
             return -1;
           }
@@ -394,17 +394,17 @@ elemento_vector: TOK_IDENTIFICADOR TOK_CORCHETEIZQUIERDO exp TOK_CORCHETEDERECHO
             return -1;
           }
           if(sim_aux->cat_simbolo == FUNCION){
-            printf("****Error en lin %li: Intento de indexacion de una variable que no es de tipo vector\n",nline);
+            printf("****Error semantico en lin %li: Intento de indexacion de una variable que no es de tipo vector\n",nline);
             deleteTablaSimbolos(tabla);
             return -1;
           }
           if(sim_aux->categoria == ESCALAR){
-            printf("****Error en lin %li: Intento de indexacion de una variable que no es de tipo vector\n",nline);
+            printf("****Error semantico en lin %li: Intento de indexacion de una variable que no es de tipo vector\n",nline);
             deleteTablaSimbolos(tabla);
             return -1;
           }
           if($3.tipo != ENTERO){
-            printf("****Error en lin %li: El indice en una operacion de indexacion tiene que ser de tipo entero\n",nline);
+            printf("****Error semantico en lin %li: El indice en una operacion de indexacion tiene que ser de tipo entero\n",nline);
             deleteTablaSimbolos(tabla);
             return -1;
           }
@@ -435,7 +435,7 @@ if_exp_sentencias: if_exp sentencias TOK_LLAVEDERECHA
 if_exp: TOK_IF TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA
         {
           if($3.tipo != BOOLEANO) {
-            printf("****Error en lin %li: Condicional con condicion de tipo int\n",nline);
+            printf("****Error semantico en lin %li: Condicional con condicion de tipo int\n",nline);
             deleteTablaSimbolos(tabla);
             return -1;
           }
@@ -454,7 +454,7 @@ bucle: while_exp sentencias TOK_LLAVEDERECHA
 while_exp: while exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA
            {
              if($2.tipo != BOOLEANO) {
-               printf("****Error en lin %li: Bucle con condicion de tipo int\n",nline);
+               printf("****Error semantico en lin %li: Bucle con condicion de tipo int\n",nline);
                deleteTablaSimbolos(tabla);
                return -1;
              }
@@ -479,13 +479,13 @@ lectura: TOK_SCANF TOK_IDENTIFICADOR
   else simboloTabla = buscarAmbitoLocal(tabla, $2.lexema);
 
   if(simboloTabla == NULL) {
-    printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$2.lexema);
+    printf("****Error semantico en lin %li: Acceso a variable no declarada (%s)\n",nline,$2.lexema);
     deleteTablaSimbolos(tabla);
     return -1;
   }
   simbolo = getValor(simboloTabla);
   if(simbolo->cat_simbolo == FUNCION || simbolo->categoria == VECTOR){
-    printf("****Error en lin %li: Categoria o clase incorrecta de (%s)\n",nline,$2.lexema);
+    printf("****Error semantico en lin %li: Categoria o clase incorrecta de (%s)\n",nline,$2.lexema);
     deleteTablaSimbolos(tabla);
     return -1;
   }
@@ -501,9 +501,16 @@ escritura: TOK_PRINTF exp
 
 retorno_funcion: TOK_RETURN exp
                  {
+                   if(llamando_funcion == 0){
+                     printf("****Error semantico en lin %li: Sentencia de retorno fuera del cupero de una funcion\n",nline);
+                     deleteTablaSimbolos(tabla);
+                     return -1;
+                   }
                    fprintf(out,";R61:\t<retorno_funcion> ::= return <exp>\n");
                    if(fn_tipo != $2.tipo) {
-                     printf("****Error en lin %li: Tipo incorrecto en retorno\n",nline);
+                     printf("****Error semantico en lin %li: Tipo incorrecto en retorno\n",nline);
+                     deleteTablaSimbolos(tabla);
+                     return -1;
                    }
                    fn_return ++;
                    retornarFuncion(out,$2.es_direccion);
@@ -513,7 +520,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error en lin %li: No se pueden sumar booleanos\n",nline);
+          printf("****Error semantico en lin %li: No se pueden sumar booleanos\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -525,7 +532,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R73:\t<exp> ::= <exp> - <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error en lin %li: No se pueden restar booleanos\n",nline);
+          printf("****Error semantico en lin %li: No se pueden restar booleanos\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -537,7 +544,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R74:\t<exp> ::= <exp> / <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error en lin %li: No se pueden dividir booleanos\n",nline);
+          printf("****Error semantico en lin %li: No se pueden dividir booleanos\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -549,7 +556,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R75:\t<exp> ::= <exp> * <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error en lin %li: No se pueden multiplicar booleanos\n",nline);
+          printf("****Error semantico en lin %li: No se pueden multiplicar booleanos\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -561,7 +568,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R76:\t<exp> ::= - <exp>\n");
         if($2.tipo == BOOLEANO) {
-          printf("****Error en lin %li: Operacion aritmetica con operandos boolean\n",nline);
+          printf("****Error semantico en lin %li: Operacion aritmetica con operandos boolean\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -573,7 +580,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R77:\t<exp> ::= <exp> && <exp>\n");
         if(($1.tipo == ENTERO) || ($3.tipo == ENTERO)) {
-          printf("****Error en lin %li: Operacion logica con operandos int\n",nline);
+          printf("****Error semantico en lin %li: Operacion logica con operandos int\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -585,7 +592,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R:78\t<exp> ::= <exp> || <exp>\n");
         if(($1.tipo == ENTERO) || ($3.tipo == ENTERO)) {
-          printf("****Error en lin %li: Operacion logica con operandos int\n",nline);
+          printf("****Error semantico en lin %li: Operacion logica con operandos int\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -597,7 +604,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R79:\t<exp> ::= ! <exp>\n");
         if($2.tipo == ENTERO) {
-          printf("****Error en lin %li: Operacion logica con operandos int\n",nline);
+          printf("****Error semantico en lin %li: Operacion logica con operandos int\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -612,13 +619,13 @@ exp:  exp TOK_MAS exp
       SIMBOLO *sim_aux;
       if (ambito == GLOBAL){
         if((simbolo = buscarAmbitoGlobal(tabla,$1.lexema)) == NULL){
-          printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+          printf("****Error semantico en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
           deleteTablaSimbolos(tabla);
           return -1;
         }
       }else{
         if((simbolo = buscarAmbitoLocal(tabla,$1.lexema)) == NULL){
-          printf("****Error en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
+          printf("****Error semantico en lin %li: Acceso a variable no declarada (%s)\n",nline,$1.lexema);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -630,12 +637,12 @@ exp:  exp TOK_MAS exp
         return -1;
       }
       if(sim_aux->cat_simbolo == FUNCION){
-        printf("****Error en lin %li: Asignacion incompatible\n",nline);
+        printf("****Error semantico en lin %li: Asignacion incompatible\n",nline);
         deleteTablaSimbolos(tabla);
         return -1;
       }
       if(sim_aux->categoria == VECTOR){
-        printf("****Error en lin %li: Asignacion incompatible\n",nline);
+        printf("****Error semantico en lin %li: Asignacion incompatible\n",nline);
         deleteTablaSimbolos(tabla);
         return -1;
       }
@@ -683,7 +690,7 @@ exp:  exp TOK_MAS exp
         SIMBOLO * simbolo;
         fprintf(out,";R88:\t<exp> ::= <identificador> ( <lista_expresiones> )\n");
         if((simboloTabla = buscarAmbitoGlobal(tabla, $1.lexema)) == NULL) {
-          printf("****Error en lin %li: La funcion no existe\n",nline);
+          printf("****Error semantico en lin %li: La funcion no existe\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -709,7 +716,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R93:\t<comparacion> ::= <exp> == <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
+                  printf("****Error semantico en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -722,7 +729,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R94:\t<comparacion> ::= <exp> != <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
+                  printf("****Error semantico en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -735,7 +742,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R95:\t<comparacion> ::= <exp> <= <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
+                  printf("****Error semantico en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -748,7 +755,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R96:\t<comparacion> ::= <exp> >= <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
+                  printf("****Error semantico en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -761,7 +768,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R97:\t<comparacion> ::= <exp> < <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
+                  printf("****Error semantico en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -774,7 +781,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R98:\t<comparacion> ::= <exp> > <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
+                  printf("****Error semantico en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -867,6 +874,11 @@ identificador: TOK_IDENTIFICADOR
         sim->identificador = (char*)malloc(sizeof(char)*(strlen($1.lexema) + 1));
         if (sim->identificador == NULL){
           printf("****Error en la tabla de simbolos\n");
+          deleteTablaSimbolos(tabla);
+          return -1;
+        }
+        if (categoria != ESCALAR){
+          printf("****Error semantico en lin %li: Variable local de tipo no escalar.\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
