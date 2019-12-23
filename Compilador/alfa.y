@@ -880,6 +880,7 @@ identificador: TOK_IDENTIFICADOR
         sim->posicion = posicion;
         num_var_locales++;
         sim->num_var_locales = num_var_locales;
+        posicion++;
         if (insertarAmbitoLocal(tabla, $1.lexema, sim) == -1){
           printf("****Error en la tabla de simbolos\n");
           deleteTablaSimbolos(tabla);
