@@ -150,7 +150,7 @@ funcion: fn_declaracion sentencias TOK_LLAVEDERECHA
          {
            fprintf(out,";R22:\t<function> ::= function <tipo> <identificador> (<parametro_funcion>) {<declaraciones_funcion> <sentencias>}\n");
            if (fn_return < 1){
-             printf("****Funcion %s sin sentencia de retorno\n", $1.lexema);
+             printf("****Error semantico en lin %li: Funcion %s sin sentencia de retorno\n",nline,$1.lexema);
              deleteTablaSimbolos(tabla);
              return -1;
            }
@@ -435,7 +435,7 @@ if_exp_sentencias: if_exp sentencias TOK_LLAVEDERECHA
 if_exp: TOK_IF TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA
         {
           if($3.tipo != BOOLEANO) {
-            printf("****Error en lin %li: Tipo incorrecto \n",nline);
+            printf("****Error en lin %li: Condicional con condicion de tipo int\n",nline);
             deleteTablaSimbolos(tabla);
             return -1;
           }
@@ -454,7 +454,7 @@ bucle: while_exp sentencias TOK_LLAVEDERECHA
 while_exp: while exp TOK_PARENTESISDERECHO TOK_LLAVEIZQUIERDA
            {
              if($2.tipo != BOOLEANO) {
-               printf("****Error en lin %li: Tipo incorrecto \n",nline);
+               printf("****Error en lin %li: Bucle con condicion de tipo int\n",nline);
                deleteTablaSimbolos(tabla);
                return -1;
              }
@@ -561,7 +561,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R76:\t<exp> ::= - <exp>\n");
         if($2.tipo == BOOLEANO) {
-          printf("****Error en lin %li: Tipo incorrecto\n",nline);
+          printf("****Error en lin %li: Operacion aritmetica con operandos boolean\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -573,7 +573,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R77:\t<exp> ::= <exp> && <exp>\n");
         if(($1.tipo == ENTERO) || ($3.tipo == ENTERO)) {
-          printf("****Error en lin %li: Tipo incorrecto\n",nline);
+          printf("****Error en lin %li: Operacion logica con operandos int\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -585,7 +585,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R:78\t<exp> ::= <exp> || <exp>\n");
         if(($1.tipo == ENTERO) || ($3.tipo == ENTERO)) {
-          printf("****Error en lin %li: Tipo incorrecto\n",nline);
+          printf("****Error en lin %li: Operacion logica con operandos int\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -597,7 +597,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R79:\t<exp> ::= ! <exp>\n");
         if($2.tipo == ENTERO) {
-          printf("****Error en lin %li: Tipo incorrecto\n",nline);
+          printf("****Error en lin %li: Operacion logica con operandos int\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -709,7 +709,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R93:\t<comparacion> ::= <exp> == <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
+                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -722,7 +722,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R94:\t<comparacion> ::= <exp> != <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
+                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -735,7 +735,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R95:\t<comparacion> ::= <exp> <= <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
+                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -748,7 +748,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R96:\t<comparacion> ::= <exp> >= <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
+                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -761,7 +761,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R97:\t<comparacion> ::= <exp> < <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
+                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
@@ -774,7 +774,7 @@ comparacion:  exp TOK_IGUAL exp
               {
                 fprintf(out,";R98:\t<comparacion> ::= <exp> > <exp>\n");
                 if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-                  printf("****Error en lin %li: No se pueden comparar booleanos\n",nline);
+                  printf("****Error en lin %li: Comparacion con operandos boolean\n",nline);
                   deleteTablaSimbolos(tabla);
                   return -1;
                 }
