@@ -521,7 +521,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R72:\t<exp> ::= <exp> + <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error semantico en lin %li: No se pueden sumar booleanos\n",nline);
+          printf("****Error semantico en lin %li: Operacion aritmetica con operandos boolean\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -533,7 +533,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R73:\t<exp> ::= <exp> - <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error semantico en lin %li: No se pueden restar booleanos\n",nline);
+          printf("****Error semantico en lin %li: Operacion aritmetica con operandos boolean\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -545,7 +545,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R74:\t<exp> ::= <exp> / <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error semantico en lin %li: No se pueden dividir booleanos\n",nline);
+          printf("****Error semantico en lin %li: Operacion aritmetica con operandos boolean\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -557,7 +557,7 @@ exp:  exp TOK_MAS exp
       {
         fprintf(out,";R75:\t<exp> ::= <exp> * <exp>\n");
         if(($1.tipo == BOOLEANO) || ($3.tipo == BOOLEANO)) {
-          printf("****Error semantico en lin %li: No se pueden multiplicar booleanos\n",nline);
+          printf("****Error semantico en lin %li: Operacion aritmetica con operandos boolean\n",nline);
           deleteTablaSimbolos(tabla);
           return -1;
         }
@@ -698,7 +698,7 @@ exp:  exp TOK_MAS exp
         }
         simbolo = getValor(simboloTabla);
         if(pila_argumentos != simbolo->num_parametros){
-          printf("****Error semantico en lin %li: Numero de argumentos incorrecto\n",nline);
+          printf("****Error semantico en lin %li: Numero incorrecto de parametros en llamada a funcion\n",nline);
         }
         $$.tipo = simbolo->tipo;
         llamarFuncion(out, $1.lexema, simbolo->num_parametros);
@@ -707,6 +707,11 @@ exp:  exp TOK_MAS exp
     };
 
 aux: TOK_IDENTIFICADOR TOK_PARENTESISIZQUIERDO {
+    if(llamando_funcion == 1){
+      printf("****Error semantico en lin %li: No esta permitido el uso de llamadas a funciones como parametros de otras funciones\n",nline);
+      deleteTablaSimbolos(tabla);
+      return -1;
+    }
     pila_argumentos = 0;
     strcpy($$.lexema, $1.lexema);
     llamando_funcion = 1;
