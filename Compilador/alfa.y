@@ -21,6 +21,7 @@
   int posicion_parametro = 0;
   int etiqueta = 0;
   int fn_return = 0;
+  int llamando_funcion = 0;
   TIPO fn_tipo;
 %}
 %union
@@ -81,6 +82,7 @@
 %type <atributos> while_exp
 %type <atributos> fn_declaracion
 %type <atributos> fn_nombre
+%type <atributos> aux
 
 %left TOK_MAS TOK_MENOS TOK_OR
 %left TOK_ASTERISCO TOK_DIVISION TOK_AND
@@ -642,13 +644,12 @@ exp:  exp TOK_MAS exp
       if (sim_aux->cat_simbolo == PARAMETRO){
         escribirParametro(out,sim_aux->posicion,num_parametros);
       }else if (sim_aux->cat_simbolo == VARIABLE){
-        if(ambito == GLOBAL){
+        if(ambito == LOCAL) {
+          escribirVariableLocal(out,sim_aux->posicion);
+        }
+        else {
           escribir_operando(out,$1.lexema,1);
-        }else{
-          if (buscarAmbitoGlobal(tabla,$1.lexema) == NULL){
-            escribirVariableLocal(out,sim_aux->posicion);
-          }else{
-            escribir_operando(out,$1.lexema,1);
+          if(llamando_funcion == 1) {
             operandoEnPilaAArgumento(out,1);
           }
         }
@@ -670,7 +671,7 @@ exp:  exp TOK_MAS exp
       $$.es_direccion = $2.es_direccion;
     }
     | elemento_vector {fprintf(out,";R85:\t<exp> ::= <elemento_vector>\n");}
-    | TOK_IDENTIFICADOR TOK_PARENTESISIZQUIERDO lista_expresiones TOK_PARENTESISDERECHO
+    | aux lista_expresiones TOK_PARENTESISDERECHO
       {
         simboloTabla * simboloTabla;
         SIMBOLO * simbolo;
@@ -684,7 +685,13 @@ exp:  exp TOK_MAS exp
         $$.tipo = simbolo->tipo;
         llamarFuncion(out, $1.lexema, simbolo->num_parametros);
         limpiarPila(out, simbolo->num_parametros);
+        llamando_funcion = 0;
     };
+
+aux: TOK_IDENTIFICADOR TOK_PARENTESISIZQUIERDO {
+    strcpy($$.lexema, $1.lexema);
+    llamando_funcion = 1;
+}
 
 lista_expresiones: exp resto_lista_expresiones {fprintf(out,";R89:\t<lista_expresiones> ::= <exp> <resto_lista_expresiones>\n");}
                   |/*vacio*/{fprintf(out,";R90:\t<lista_expresiones> ::= \n");};
