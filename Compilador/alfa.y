@@ -22,6 +22,7 @@
   int etiqueta = 0;
   int fn_return = 0;
   int llamando_funcion = 0;
+  int pila_argumentos = 0;
   TIPO fn_tipo;
 %}
 %union
@@ -501,8 +502,8 @@ escritura: TOK_PRINTF exp
 
 retorno_funcion: TOK_RETURN exp
                  {
-                   if(llamando_funcion == 0){
-                     printf("****Error semantico en lin %li: Sentencia de retorno fuera del cupero de una funcion\n",nline);
+                   if(llamando_funcion == 1){
+                     printf("****Error semantico en lin %li: Sentencia de retorno fuera del cuerpo de una funcion\n",nline);
                      deleteTablaSimbolos(tabla);
                      return -1;
                    }
@@ -665,7 +666,8 @@ exp:  exp TOK_MAS exp
     | constante
       {fprintf(out,";R81:\t<exp> ::= <constante>\n");
       $$.tipo = $1.tipo;
-      $$.es_direccion = $1.es_direccion;}
+      $$.es_direccion = $1.es_direccion;
+    }
     | TOK_PARENTESISIZQUIERDO exp TOK_PARENTESISDERECHO
       {fprintf(out,";R82:\t<exp> ::= ( <exp> )\n");
       $$.tipo = $2.tipo;
@@ -695,6 +697,9 @@ exp:  exp TOK_MAS exp
           return -1;
         }
         simbolo = getValor(simboloTabla);
+        if(pila_argumentos != simbolo->num_parametros){
+          printf("****Error semantico en lin %li: Numero de argumentos incorrecto\n",nline);
+        }
         $$.tipo = simbolo->tipo;
         llamarFuncion(out, $1.lexema, simbolo->num_parametros);
         limpiarPila(out, simbolo->num_parametros);
@@ -702,14 +707,25 @@ exp:  exp TOK_MAS exp
     };
 
 aux: TOK_IDENTIFICADOR TOK_PARENTESISIZQUIERDO {
+    pila_argumentos = 0;
     strcpy($$.lexema, $1.lexema);
     llamando_funcion = 1;
 }
 
-lista_expresiones: exp resto_lista_expresiones {fprintf(out,";R89:\t<lista_expresiones> ::= <exp> <resto_lista_expresiones>\n");}
+lista_expresiones: exp resto_lista_expresiones {
+                  fprintf(out,";R89:\t<lista_expresiones> ::= <exp> <resto_lista_expresiones>\n");
+                  if(llamando_funcion == 1) {
+                    pila_argumentos++;
+                  }
+                }
                   |/*vacio*/{fprintf(out,";R90:\t<lista_expresiones> ::= \n");};
 
-resto_lista_expresiones: TOK_COMA exp resto_lista_expresiones {fprintf(out,";R91:\t<resto_lista_expresiones> ::= , <exp> <resto_lista_expresiones>\n");}
+resto_lista_expresiones: TOK_COMA exp resto_lista_expresiones {
+                          fprintf(out,";R91:\t<resto_lista_expresiones> ::= , <exp> <resto_lista_expresiones>\n");
+                          if(llamando_funcion == 1) {
+                            pila_argumentos++;
+                          }
+                        }
                         |/*vacio*/{fprintf(out,";R92:\t<resto_lista_expresiones> ::= \n");};
 
 comparacion:  exp TOK_IGUAL exp
