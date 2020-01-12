@@ -1,0 +1,6 @@
+main{
+int x,z;
+boolean b;
+z = x ^ y;
+printf(z);
+}

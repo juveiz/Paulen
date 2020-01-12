@@ -83,8 +83,7 @@ extern int yydebug;
     TOK_TRUE = 293,
     TOK_FALSE = 294,
     TOK_ERROR = 295,
-    TOK_MODULO = 296,
-    TOK_LONGITUD = 297
+    TOK_POTENCIA = 296
   };
 #endif
 
@@ -97,7 +96,7 @@ union YYSTYPE
 
  tipo_atributos atributos;
 
-#line 101 "alfa.tab.h" /* yacc.c:1909  */
+#line 100 "alfa.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
